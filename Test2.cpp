@@ -10,6 +10,6 @@
 using namespace std;
 
 int main() {
-	cout << "!!!Hello World  ARM!!!" << endl; // prints !!!Hello World ARM!!!
+	cout << "!!!Hello World  ARM 2!!!" << endl; // prints !!!Hello World ARM!!!
 	return 0;
 }
