@@ -17,8 +17,13 @@ Also had to use the following Compiler G++ options:
 And following Linker G++ options:
 -lpthread
 
+To directly compile the project on BBB
+Make sure CMake was installed on the BBB or you can install by using "apt-get install cmake"
 
+Make sure boost headers were installed on the BBB or you can install by using "apt-get install libboost-dev"
 
-
-
-
+1. At the root directory of the project (the directory of README.md file), create new build directory
+2. Jump to the created build directory (it means making build direcotry is the current direcotry)
+3. Run command "cmake .."
+4. Next, Run command "make"
+5. The execute file was create under build/Master/master

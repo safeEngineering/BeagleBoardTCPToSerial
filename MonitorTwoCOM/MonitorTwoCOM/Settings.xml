@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LoRaBridge>
+  <COMPorts>
+    <COMPort>
+      <PortName>COM7</PortName>
+      <Baud>9600</Baud>
+      <DataBits>8</DataBits>
+      <StopBits>One</StopBits>
+      <Parity>None</Parity>
+      <Handshake>None</Handshake>
+      <Use>True</Use>
+    </COMPort>
+    <COMPort>
+      <PortName>
+      </PortName>
+      <Baud>9600</Baud>
+      <DataBits>8</DataBits>
+      <StopBits>One</StopBits>
+      <Parity>None</Parity>
+      <Handshake>None</Handshake>
+      <Use>False</Use>
+    </COMPort>
+  </COMPorts>
+  <Time>
+    <MeasurementInterval>60</MeasurementInterval>
+    <TransmittingInterval>300</TransmittingInterval>
+    <BatteryCycle>1</BatteryCycle>
+  </Time>
+  <LoRa>
+    <DeviceAddress>008C3552</DeviceAddress>
+    <DeviceEUI>DEADBEEF05042016</DeviceEUI>
+    <NetworkKey>40907FF216E94920324E593FBA60DE4F</NetworkKey>
+    <ApplicationKey>C7DCB7DF8EFD6DC69B6ABD47ABE75943</ApplicationKey>
+    <WaitACK>True</WaitACK>
+    <RepeatTimes>2</RepeatTimes>
+  </LoRa>
+  <SDI12Commands>
+    <Command>
+      <MeasurementCommand>0M!</MeasurementCommand>
+      <DataCommand>0D0!</DataCommand>
+    </Command>
+    <Command>
+      <MeasurementCommand>1M!</MeasurementCommand>
+      <DataCommand>1D0!</DataCommand>
+    </Command>
+  </SDI12Commands>
+</LoRaBridge>
