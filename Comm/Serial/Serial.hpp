@@ -3,11 +3,13 @@
 
 #include <iostream>
 #include <iomanip>
+#include <boost/signals2.hpp>
 #include <boost/bind.hpp>
 #include <asio.hpp>
 
 #include "Utils.hpp"
 
+#define SERIAL_BUFFER_LENGTH            40
 #define SERIAL_PACKET_LENGTH            8
 
 #define START_OF_PACKET                 0x02
@@ -28,6 +30,9 @@ namespace SafeEngineering
             {
             }
             
+            // The event will signal whenever receiving the data packet from external serial device
+            boost::signals2::signal<void(uint8_t*, uint8_t)> m_DataReceived;
+            
             void OpenSerial()
             {
                 try
@@ -39,9 +44,9 @@ namespace SafeEngineering
                     }
                     
                     // Open the COM port
-                    m_serialPort.open("/dev/ttyUSB0");  // Name of COM/UART port ("COMx" on Windows or "/dev/ttySx" on Linux)
+                    m_serialPort.open("/dev/ttyS1");  // Name of COM/UART port ("COMx" on Windows or "/dev/ttySx" on Linux)
                     // Set baud rate
-                    asio::serial_port_base::baud_rate baud(9600);
+                    asio::serial_port_base::baud_rate baud(38400);
                     m_serialPort.set_option(baud);
                     // Set parity
                     asio::serial_port_base::parity parity(asio::serial_port_base::parity::none);
@@ -83,7 +88,7 @@ namespace SafeEngineering
                     
                 if(m_serialPort.write_some(asio::buffer(pPacket, len)) == len)
                 {
-                    std::cout << "Sent " << len << " bytes" << std::endl;
+                    std::cout << "Sent " << len << " bytes to UART" << std::endl;
                     std::cout << Utils::ConvertToHex(pPacket, (int)len) << std::endl;
                     return true;                    
                 }
@@ -93,25 +98,20 @@ namespace SafeEngineering
                 }
             }
             
-        private:
-        
+        private:        
             void StartAsyncRead()
             {
                 // Clear content of buffer
                 m_serialPort.async_read_some(asio::buffer(m_buffer), boost::bind(&Serial::ReadHandler, 
                     this, asio::placeholders::error, asio::placeholders::bytes_transferred));
-                std::cout << "Started asynchonous read operation" << std::endl;
+                std::cout << "Started asynchonous UART read operation" << std::endl;
             }
             
             void ReadHandler(const asio::error_code& err, std::size_t bytes)
             {
                 if(!err)
                 {
-                    std::cout << "Received " << bytes << " bytes" << std::endl;
-                    //for(std::size_t i = 0; i < bytes; i++)
-                    //{
-                    //    std::cout << Utils::ConvertToHex(m_buffer[i]) << std::endl;
-                    //}
+                    std::cout << "Received " << bytes << " bytes from UART" << std::endl;
                     std::cout << Utils::ConvertToHex(m_buffer, bytes) << std::endl;
                     
                     // Parse serial data and construct new packet
@@ -127,7 +127,8 @@ namespace SafeEngineering
                             if(m_packet[0] == (uint8_t)START_OF_PACKET && m_packet[SERIAL_PACKET_LENGTH - 1] == (uint8_t)END_OF_PACKET)
                             {
                                 // We got the whole valid packet
-                                std::cout << "Send packet to remote device" << std::endl;
+                                std::cout << "Forward packet to remote device throughout TCP/IP" << std::endl;
+                                m_DataReceived(m_packet, m_packetLen);
                             }
                             else
                             {
@@ -142,7 +143,7 @@ namespace SafeEngineering
                 }
                 else
                 {
-                    std::cout << "Failed: '" << err.message() <<"' when reading data on external device" << std::endl;                    
+                    std::cerr << "Failed: '" << err.message() <<"' when reading data on external device" << std::endl;
                 }
                 
                 if(err != asio::error::operation_aborted)
@@ -157,12 +158,12 @@ namespace SafeEngineering
             asio::serial_port m_serialPort;
             
             // Buffer holds data received from COM port
-            uint8_t m_buffer[40];
+            uint8_t m_buffer[SERIAL_BUFFER_LENGTH + 1];
             
             // Data packet from external device
             uint8_t m_packet[SERIAL_PACKET_LENGTH + 1];
             uint8_t m_packetLen;
-            
+                                            
         };  // Serial class
         
     }   // namespace Comm

@@ -1,5 +1,4 @@
-#include <iostream>
-#include <ctime>
+#include <stdio.h>
 
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
@@ -8,19 +7,22 @@
 
 #include "Serial.hpp"
 #include "Tcp_Connection.hpp"
+#include "Tcp_Acceptor.hpp"
 
 int main(int argc, char **argv)
 {
     try
     {
         asio::io_service ios;
-                
+        
         SafeEngineering::Comm::Serial serial1(ios);
         // Open UART connection
         serial1.OpenSerial();
-        SafeEngineering::Comm::Connection::pointer new_connection = boost::shared_ptr<SafeEngineering::Comm::Connection>(new SafeEngineering::Comm::Connection(ios, serial1));
-        //new_connection->Connect("192.168.1.101", 8000);
-        new_connection->Connect("10.10.1.107", 8000);
+        
+        // Listen to new connections
+        //SafeEngineering::Comm::Acceptor acceptor(ios, serial1, "192.168.1.103", 8000);
+        SafeEngineering::Comm::Acceptor acceptor(ios, serial1, "10.10.1.144", 8000);
+        acceptor.AcceptConnections();
         
         // Run the ASIO service
         ios.run();
