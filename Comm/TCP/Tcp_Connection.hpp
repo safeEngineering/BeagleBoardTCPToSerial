@@ -25,6 +25,8 @@ namespace SafeEngineering
             {
                 // The default is server connection
                 m_serverSide = true;
+                // Socket have not connected yet
+                m_connectedSocket = false;
             }
             
             ~Connection()
@@ -53,7 +55,8 @@ namespace SafeEngineering
             {                
                 // Keep remote endpoint for logging
                 m_remoteEndpoint = m_socket.remote_endpoint();
-                
+                // Socket have already connected
+                m_connectedSocket = true;
                 // And then, we wait for TCP/IP data
                 std::cout << "Waiting for data from endpoint:" << m_remoteEndpoint << std::endl;                
                 m_socket.async_read_some(asio::buffer(m_buffer, SOCKET_BUFFER_LENGTH),
@@ -119,12 +122,16 @@ namespace SafeEngineering
                 }
                 else
                 {
-                    std::cerr << "Failed: '" << err.message() <<"' in HandleRead on endpoint:" << m_remoteEndpoint << std::endl;
+                    std::cerr << "Failed: '" << err.message() <<"' in HandleRead on endpoint:" << m_remoteEndpoint << std::endl;                    
+                    // Close underlying socket
                     m_socket.close();
+                    // Socket have already broken
+                    m_connectedSocket = false;
                     if(m_serverSide == true)
                     {
                         // Signal to acceptor that the connection was dropped
                         m_ConnectionDropped();
+                        m_serial.m_DataReceived.disconnect(boost::bind(&Connection::HandleSerialData, shared_from_this(), _1, _2));
                     }
                     else
                     {
@@ -143,11 +150,15 @@ namespace SafeEngineering
                 else
                 {
                     std::cerr << "Failed: '" << err.message() <<"' in HandleWrite on endpoint:" << m_remoteEndpoint << std::endl;
+                    // Close underlying socket
                     m_socket.close();
+                    // Socket have already broken
+                    m_connectedSocket = false;
                     if(m_serverSide == true)
                     {
                         // Signal to acceptor that the connection was dropped
                         m_ConnectionDropped();
+                        m_serial.m_DataReceived.disconnect(boost::bind(&Connection::HandleSerialData, shared_from_this(), _1, _2));
                     }
                     else
                     {
@@ -174,12 +185,13 @@ namespace SafeEngineering
             
             void HandleSerialData(uint8_t* pPacket, uint8_t len)
             {
-                if(m_socket.is_open() == false)
+                if(m_connectedSocket == false)
                 {
                     std::cerr << "TCP/IP connection have not established yet" << std::endl;
                     return;
                 }
                     
+                std::cout << "Forward packet to remote device throughout TCP/IP" << std::endl;
                 // Copy data from serial's buffer to local tx buffer
                 memcpy(m_txbuffer, pPacket, len);
                 m_txbufferLen = len;
@@ -209,6 +221,8 @@ namespace SafeEngineering
             int m_serverPort;
             // The flag specifies this connection is client side at or server side
             bool m_serverSide;
+            // The flag specifies whether socket is actually connected or not
+            bool m_connectedSocket;
             
         };  // Connection class
     }   
