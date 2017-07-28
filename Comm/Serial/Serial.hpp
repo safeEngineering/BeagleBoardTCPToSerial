@@ -3,17 +3,20 @@
 
 #include <iostream>
 #include <iomanip>
+#include <deque>
+
 #include <boost/signals2.hpp>
 #include <boost/bind.hpp>
 #include <asio.hpp>
-
-#include "Utils.hpp"
 
 #define SERIAL_BUFFER_LENGTH            40
 #define SERIAL_PACKET_LENGTH            8
 
 #define START_OF_PACKET                 0x02
 #define END_OF_PACKET                   0x03
+
+#include "SerialPacket.hpp"
+#include "Utils.hpp"
 
 namespace SafeEngineering
 {
@@ -85,17 +88,38 @@ namespace SafeEngineering
                     return false;
                 if(m_serialPort.is_open() == false)
                     return false;
-                    
-                if(m_serialPort.write_some(asio::buffer(pPacket, len)) == len)
+                                
+                //if(m_serialPort.write_some(asio::buffer(pPacket, len)) == len)
+                //{
+                //    std::cout << "Sent " << len << " bytes to UART" << std::endl;
+                //    std::cout << Utils::ConvertToHex(pPacket, (int)len) << std::endl;
+                //    return true;                    
+                //}
+                //else
+                //{
+                //    return false;
+                //}
+                
+                // Construct new packet for the queue
+                SerialPacket packet(pPacket, len);
+                
+                // Keep in mind. Calling to empty() will been ensured as atomic operation!!!
+                bool write_in_progress = !m_writePackets.empty();                
+                m_writePackets.push_back(packet);
+                if(!write_in_progress)
                 {
-                    std::cout << "Sent " << len << " bytes to UART" << std::endl;
-                    std::cout << Utils::ConvertToHex(pPacket, (int)len) << std::endl;
-                    return true;                    
+                    std::cout << "Sending bytes: " << Utils::ConvertToHex(pPacket, (int)len) << " to UART port" << std::endl;
+                    
+                    // Send this packet to serial port now
+                    asio::async_write(m_serialPort, asio::buffer(m_writePackets.front().Data(), m_writePackets.front().Length()), 
+                        boost::bind(&Serial::HandleWrite, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
                 }
                 else
                 {
-                    return false;
+                    std::cout << "Push the packet to the queue" << std::endl;
                 }
+                
+                return true;
             }
             
         private:        
@@ -116,7 +140,7 @@ namespace SafeEngineering
                     
                     // Parse serial data and construct new packet
                     for(int i = 0; i < (int)bytes; i++)
-                    {
+                    { 
                         // Add new byte into tail of packet
                         if(m_packetLen < SERIAL_PACKET_LENGTH)
                             m_packet[m_packetLen++] = m_buffer[i];
@@ -126,8 +150,7 @@ namespace SafeEngineering
                         {
                             if(m_packet[0] == (uint8_t)START_OF_PACKET && m_packet[SERIAL_PACKET_LENGTH - 1] == (uint8_t)END_OF_PACKET)
                             {
-                                // We got the whole valid packet
-                                std::cout << "Forward packet to remote device throughout TCP/IP" << std::endl;
+                                // We got the whole valid packet                                
                                 m_DataReceived(m_packet, m_packetLen);
                             }
                             else
@@ -143,13 +166,36 @@ namespace SafeEngineering
                 }
                 else
                 {
-                    std::cerr << "Failed: '" << err.message() <<"' when reading data on external device" << std::endl;
+                    std::cerr << "Failed: '" << err.message() <<"' when reading data from external device" << std::endl;
                 }
                 
                 if(err != asio::error::operation_aborted)
                 {
                     // Start next asynchonous read operation
                     StartAsyncRead();
+                }
+            }
+            
+            void HandleWrite(const asio::error_code& err, std::size_t bytes)
+            {
+                if(!err)
+                {
+                    std::cout << bytes <<  " bytes were sent successfully" << std::endl;
+                    
+                    // Remote processed packet from queue
+                    m_writePackets.pop_front();
+                    if(!m_writePackets.empty())
+                    {
+                        std::cout << "Sending bytes: " << Utils::ConvertToHex(m_writePackets.front().Data(), m_writePackets.front().Length()) << " to UART port" << std::endl;
+                        
+                        // Send queued packet to serial port now
+                        asio::async_write(m_serialPort, asio::buffer(m_writePackets.front().Data(), m_writePackets.front().Length()), 
+                            boost::bind(&Serial::HandleWrite, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
+                    }
+                }
+                else
+                {
+                    std::cerr << "Failed: '" << err.message() <<"' when writing data to external device" << std::endl;
                 }
             }
             
@@ -163,7 +209,10 @@ namespace SafeEngineering
             // Data packet from external device
             uint8_t m_packet[SERIAL_PACKET_LENGTH + 1];
             uint8_t m_packetLen;
-                                            
+            
+            // The queue holds packets needed writting to hardware serial port
+            std::deque<SerialPacket> m_writePackets;
+                            
         };  // Serial class
         
     }   // namespace Comm

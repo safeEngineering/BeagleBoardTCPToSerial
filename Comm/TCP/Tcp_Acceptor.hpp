@@ -19,7 +19,8 @@ namespace SafeEngineering
             Acceptor(asio::io_service& io_service, Serial& serial, const std::string& host, int port) : m_ios(io_service), m_serial(serial),
                 m_acceptor(io_service, asio::ip::tcp::endpoint(asio::ip::address::from_string(host), port))
             {
-                m_haveConnection = false;
+                m_totalConnections = 0;
+                m_currentConnection = nullptr;
             }
             
             bool AcceptConnections()
@@ -47,26 +48,26 @@ namespace SafeEngineering
             {
                 if(!err)
                 {
-                    /////////////////////////////////////////////////////////////////////////////////////////////////////
-                    // Now, we no need to guard m_haveConnection variable because all opeartions were in the same thread
+                    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+                    // Now, we no need to guard m_totalConnections variable because all opeartions were in the same thread
                     // However, the synchronous was needed whenever we call asio::io_service::run from more than threads
-                    /////////////////////////////////////////////////////////////////////////////////////////////////////
-                    if(m_haveConnection == false)
+                    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+                    if(m_totalConnections > 0 && m_currentConnection != nullptr)    // Request to close the previous connection
                     {
-                        // Toggle the flag to diable new connection
-                        m_haveConnection = true;
-                        
-                        std::cout << "Accepted request from endpoint:" << new_connection->Socket().remote_endpoint() << std::endl;
-                        // Register Data event from Serial class
-                        new_connection->RegisterSerialData();
-                        // Initialize data reading for new connection
-                        new_connection->Start();
+                        std::cout << "Close the previous connection" << std::endl;
+                        m_currentConnection->Close();
+                        m_currentConnection = nullptr;
                     }
-                    else
-                    {
-                        std::cout << "Cancel request from endpoint:" << new_connection->Socket().remote_endpoint() << std::endl;
-                        new_connection->Socket().close();
-                    }
+                    
+                    // Increase the total connections
+                    m_totalConnections++;
+                    // Assign this connection as currently active connection
+                    m_currentConnection = new_connection;
+                    std::cout << "Accepted request from endpoint:" << new_connection->Socket().remote_endpoint() << std::endl;
+                    // Register Data event from Serial class
+                    new_connection->RegisterSerialData();
+                    // Initialize data reading for new connection
+                    new_connection->Start();
                     
                     // Listen to new request
                     if(!AcceptConnections())
@@ -83,10 +84,11 @@ namespace SafeEngineering
             void HandleDroppedConnection()
             {
                 /////////////////////////////////////////////////////////////////////////////////////////////////////
-                // Now, we no need to guard m_haveConnection variable because all opeartions were in the same thread
+                // Now, we no need to guard m_totalConnections variable because all opeartions were in the same thread
                 // However, the synchronous was needed whenever we call asio::io_service::run from more than threads
                 /////////////////////////////////////////////////////////////////////////////////////////////////////
-                m_haveConnection = false;   // Toggle the flag to enable new connection
+                // Decrease the total connections
+                m_totalConnections--;
             }
             
         private:
@@ -96,8 +98,10 @@ namespace SafeEngineering
             Serial& m_serial;
             // TCP/IP connection acceptance object
             asio::ip::tcp::acceptor m_acceptor;
-            // The flag specifies whethere having connection or not
-            bool m_haveConnection;
+            // The total connections
+            int m_totalConnections;
+            // Current TCP/IP connection
+            SafeEngineering::Comm::Connection::pointer m_currentConnection;
             
         };  // Acceptor class
         
