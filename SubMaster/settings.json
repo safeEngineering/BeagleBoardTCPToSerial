@@ -1,0 +1,57 @@
+{
+  "version": "1.0.0",
+  "self_id": 9,
+  "units": [
+    {
+      "unit_type": "master",
+      "unit_id": 0,
+      "unit_ipaddr": "192.168.1.1"
+    },
+    {
+      "unit_type": "slave",
+      "unit_id": 1,
+      "unit_ipaddr": "192.168.1.2"
+    },
+    {
+      "unit_type": "slave",
+      "unit_id": 2,
+      "unit_ipaddr": "192.168.1.3"
+    },
+    {
+      "unit_type": "slave",
+      "unit_id": 3,
+      "unit_ipaddr": "192.168.1.4"
+    },
+    {
+      "unit_type": "slave",
+      "unit_id": 4,
+      "unit_ipaddr": "192.168.1.5"
+    },
+    {
+      "unit_type": "slave",
+      "unit_id": 5,
+      "unit_ipaddr": "192.168.1.6"
+    },
+    {
+      "unit_type": "slave",
+      "unit_id": 6,
+      "unit_ipaddr": "192.168.1.7"
+    },
+    {
+      "unit_type": "slave",
+      "unit_id": 7,
+      "unit_ipaddr": "192.168.1.8"
+    },
+    {
+      "unit_type": "slave",
+      "unit_id": 8,
+      "unit_ipaddr": "192.168.1.9"
+    },
+    {
+      "unit_type": "submaster",
+      "unit_id": 9,
+      "unit_ipaddr": "192.168.1.10"
+    }
+  ]
+}
+
