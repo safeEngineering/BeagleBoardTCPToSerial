@@ -141,6 +141,13 @@ namespace SafeEngineering
                     // Parse serial data and construct new packet
                     for(int i = 0; i < (int)bytes; i++)
                     { 
+                    	if(m_buffer[i] == (uint8_t)START_OF_PACKET)
+                    	{
+                    		// Reset for new packet
+                    	    memset(m_packet, 0L, SERIAL_PACKET_LENGTH + 1);
+                    	    m_packetLen = 0;
+                    	}
+
                         // Add new byte into tail of packet
                         if(m_packetLen < SERIAL_PACKET_LENGTH)
                             m_packet[m_packetLen++] = m_buffer[i];
