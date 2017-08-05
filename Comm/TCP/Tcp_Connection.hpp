@@ -93,11 +93,7 @@ namespace SafeEngineering
         private:
             // Reconnect to the remote server
             void Reconnect()
-            {
-                // Delay 1s before reconnecing to the server
-                asio::deadline_timer delay(m_socket.get_io_service(), boost::posix_time::seconds(1));
-                delay.wait();
-                
+            {   
                 asio::ip::tcp::endpoint ep(asio::ip::address::from_string(m_serverIP), m_serverPort);
                 std::cout << "Trying to reconnect to " << ep << std::endl;
                 m_socket.async_connect(ep, boost::bind(&Connection::HandleConnect, shared_from_this(), asio::placeholders::error));
@@ -135,8 +131,9 @@ namespace SafeEngineering
                     }
                     else
                     {
-                        // Try to reconnect to server
-                        Reconnect();
+                        // Delay asynchronously 1s after that we will try reconnecing to the server
+                        asio::deadline_timer delay(m_socket.get_io_service(), boost::posix_time::seconds(1));
+                        delay.async_wait(boost::bind(&Connection::Reconnect, shared_from_this()));
                     }
                 }
             }

@@ -88,17 +88,6 @@ namespace SafeEngineering
                     return false;
                 if(m_serialPort.is_open() == false)
                     return false;
-                                
-                //if(m_serialPort.write_some(asio::buffer(pPacket, len)) == len)
-                //{
-                //    std::cout << "Sent " << len << " bytes to UART" << std::endl;
-                //    std::cout << Utils::ConvertToHex(pPacket, (int)len) << std::endl;
-                //    return true;                    
-                //}
-                //else
-                //{
-                //    return false;
-                //}
                 
                 // Construct new packet for the queue
                 SerialPacket packet(pPacket, len);
@@ -140,13 +129,13 @@ namespace SafeEngineering
                     
                     // Parse serial data and construct new packet
                     for(int i = 0; i < (int)bytes; i++)
-                    { 
-                    	if(m_buffer[i] == (uint8_t)START_OF_PACKET)
-                    	{
-                    		// Reset for new packet
-                    	    memset(m_packet, 0L, SERIAL_PACKET_LENGTH + 1);
-                    	    m_packetLen = 0;
-                    	}
+                    {
+                        if(m_buffer[i] == (uint8_t)START_OF_PACKET)
+                        {
+                            // Reset for new packet
+                            memset(m_packet, 0L, SERIAL_PACKET_LENGTH + 1);
+                            m_packetLen = 0;
+                        }
 
                         // Add new byte into tail of packet
                         if(m_packetLen < SERIAL_PACKET_LENGTH)
@@ -163,7 +152,8 @@ namespace SafeEngineering
                             else
                             {
                                 // Invalid packet
-                                std::cout << "Received invalid packet at local device" << std::endl;
+                                std::cout << "Received invalid packet from external device" << std::endl;
+                                //std::cout << Utils::ConvertToHex(m_packet, m_packetLen) << std::endl;
                             }
                             // Reset for new packet
                             memset(m_packet, 0L, SERIAL_PACKET_LENGTH + 1);
