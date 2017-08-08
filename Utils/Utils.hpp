@@ -15,6 +15,7 @@ namespace SafeEngineering
     {
         typedef enum
         {
+            UNUSED      = 0x00,
             MASTER      = 0x01,
             SUBMASTER   = 0x02,
             SLAVE       = 0x04
@@ -68,7 +69,7 @@ namespace SafeEngineering
             }
             return str;
         }        
-        
+                
         inline bool LoadSettings(Settings& settings)
         {
             // For testing and debugging
@@ -130,6 +131,8 @@ namespace SafeEngineering
                             settings.CurrentUnit.Type = UnitType::SUBMASTER;
                         else if (unit_type_value == "slave")
                             settings.CurrentUnit.Type = UnitType::SLAVE;
+                        else if (unit_type_value == "unused")
+                            settings.CurrentUnit.Type = UnitType::UNUSED;
                         else
                             continue;
                         settings.CurrentUnit.IPAddress = unit_ipaddr_value;
@@ -143,6 +146,8 @@ namespace SafeEngineering
                             settings.Units[index].Type = UnitType::SUBMASTER;
                         else if (unit_type_value == "slave")
                             settings.Units[index].Type = UnitType::SLAVE;
+                        else if (unit_type_value == "unused")
+                            settings.Units[index].Type = UnitType::UNUSED;
                         else
                             continue;
                         settings.Units[index].IPAddress = unit_ipaddr_value;

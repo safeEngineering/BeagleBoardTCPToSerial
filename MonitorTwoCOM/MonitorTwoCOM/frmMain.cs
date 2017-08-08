@@ -207,7 +207,10 @@ namespace MonitorTwoCOM
                 // process command string from GUI
                 //ProcessCommand(ref port1, cmbCommand.Text);
                 //ProcessModbusMessage(ref port1, cmbCommand.Text);
-                ProcessSerialMessage(ref port1, cmbCommand.Text);
+                if (com1Setting.Use)
+                    ProcessSerialMessage(ref port1, cmbCommand.Text);
+                if (com2Setting.Use)
+                    ProcessSerialMessage(ref port1, cmbCommand.Text);
             }
             catch (Exception ex)
             {
@@ -1175,7 +1178,10 @@ namespace MonitorTwoCOM
                         }
                         else
                         {
-                            item.ForeColor = Color.Blue;
+                            if(fromCOM)
+                                item.ForeColor = Color.Blue;
+                            else
+                                item.ForeColor = Color.Violet;
                         }
                         // add item to tail
                         listView1.Items.Add(item);
@@ -2412,60 +2418,120 @@ namespace MonitorTwoCOM
         {
             byte[] data = new byte[8];
 
-            data[0] = 0x02; // STX
-            data[1] = 0x40; // Command
-            data[2] = 0x30;
-            data[3] = 0x31;
-            data[4] = 0x32;
-            data[5] = 0x33;
-            data[6] = 0x34;
-            data[7] = 0x03; // ETX
-            SendBytesToCOM(ref port1, data, data.Length);
+            if (com1Setting.Use)
+            {
+                data[0] = 0x02; // STX
+                data[1] = 0x40; // Command
+                data[2] = 0x30;
+                data[3] = 0x31;
+                data[4] = 0x32;
+                data[5] = 0x33;
+                data[6] = 0x34;
+                data[7] = 0x03; // ETX
+                SendBytesToCOM(ref port1, data, data.Length);
+            }
+            if (com2Setting.Use)
+            {
+                data[0] = 0x02; // STX
+                data[1] = 0x41; // Command
+                data[2] = 0x35;
+                data[3] = 0x36;
+                data[4] = 0x37;
+                data[5] = 0x38;
+                data[6] = 0x39;
+                data[7] = 0x03; // ETX
+                SendBytesToCOM(ref port2, data, data.Length);
+            }
         }
 
         private void itemCmd2_Click(object sender, EventArgs e)
         {
             byte[] data = new byte[8];
 
-            data[0] = 0x02; // STX
-            data[1] = 0x41; // Command
-            data[2] = 0x35;
-            data[3] = 0x36;
-            data[4] = 0x37;
-            data[5] = 0x38;
-            data[6] = 0x39;
-            data[7] = 0x03; // ETX
-            SendBytesToCOM(ref port1, data, data.Length);
+            if (com1Setting.Use)
+            {
+                data[0] = 0x02; // STX
+                data[1] = 0x41; // Command
+                data[2] = 0x35;
+                data[3] = 0x36;
+                data[4] = 0x37;
+                data[5] = 0x38;
+                data[6] = 0x39;
+                data[7] = 0x03; // ETX
+                SendBytesToCOM(ref port1, data, data.Length);
+            }
+            if (com2Setting.Use)
+            {
+                data[0] = 0x02; // STX
+                data[1] = 0x42; // Command
+                data[2] = 0x3A;
+                data[3] = 0x3B;
+                data[4] = 0x3C;
+                data[5] = 0x3D;
+                data[6] = 0x3E;
+                data[7] = 0x03; // ETX
+                SendBytesToCOM(ref port2, data, data.Length);
+            }
         }
 
         private void itemCmd3_Click(object sender, EventArgs e)
         {
             byte[] data = new byte[8];
 
-            data[0] = 0x02; // STX
-            data[1] = 0x42; // Command
-            data[2] = 0x3A;
-            data[3] = 0x3B;
-            data[4] = 0x3C;
-            data[5] = 0x3D;
-            data[6] = 0x3E;
-            data[7] = 0x03; // ETX
-            SendBytesToCOM(ref port1, data, data.Length);
+            if (com1Setting.Use)
+            {
+                data[0] = 0x02; // STX
+                data[1] = 0x42; // Command
+                data[2] = 0x3A;
+                data[3] = 0x3B;
+                data[4] = 0x3C;
+                data[5] = 0x3D;
+                data[6] = 0x3E;
+                data[7] = 0x03; // ETX
+                SendBytesToCOM(ref port1, data, data.Length);
+            }
+            if (com2Setting.Use)
+            {
+                data[0] = 0x02; // STX
+                data[1] = 0x43; // Command
+                data[2] = 0x3F;
+                data[3] = 0x30;
+                data[4] = 0x31;
+                data[5] = 0x32;
+                data[6] = 0x33;
+                data[7] = 0x03; // ETX
+                SendBytesToCOM(ref port2, data, data.Length);
+            }
         }
 
         private void itemCmd4_Click(object sender, EventArgs e)
         {
             byte[] data = new byte[8];
 
-            data[0] = 0x02; // STX
-            data[1] = 0x43; // Command
-            data[2] = 0x3F;
-            data[3] = 0x30;
-            data[4] = 0x31;
-            data[5] = 0x32;
-            data[6] = 0x33;
-            data[7] = 0x03; // ETX
-            SendBytesToCOM(ref port1, data, data.Length);
+            if (com1Setting.Use)
+            {
+                data[0] = 0x02; // STX
+                data[1] = 0x43; // Command
+                data[2] = 0x3F;
+                data[3] = 0x30;
+                data[4] = 0x31;
+                data[5] = 0x32;
+                data[6] = 0x33;
+                data[7] = 0x03; // ETX
+                SendBytesToCOM(ref port1, data, data.Length);
+            }
+            if (com2Setting.Use)
+            {
+                data[0] = 0x02; // STX
+                data[1] = 0x40; // Command
+                data[2] = 0x30;
+                data[3] = 0x31;
+                data[4] = 0x32;
+                data[5] = 0x33;
+                data[6] = 0x34;
+                data[7] = 0x03; // ETX
+                SendBytesToCOM(ref port2, data, data.Length);
+            }
         }
 
         #endregion

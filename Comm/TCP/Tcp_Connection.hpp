@@ -93,7 +93,7 @@ namespace SafeEngineering
         private:
             // Reconnect to the remote server
             void Reconnect()
-            {   
+            {
                 asio::ip::tcp::endpoint ep(asio::ip::address::from_string(m_serverIP), m_serverPort);
                 std::cout << "Trying to reconnect to " << ep << std::endl;
                 m_socket.async_connect(ep, boost::bind(&Connection::HandleConnect, shared_from_this(), asio::placeholders::error));
@@ -118,23 +118,8 @@ namespace SafeEngineering
                 }
                 else
                 {
-                    std::cerr << "Failed: '" << err.message() <<"' in HandleRead on endpoint:" << m_remoteEndpoint << std::endl;                    
-                    // Close underlying socket
-                    m_socket.close();
-                    // Socket have already broken
-                    m_connectedSocket = false;
-                    if(m_serverSide == true)
-                    {
-                        // Signal to acceptor that the connection was dropped
-                        m_ConnectionDropped();
-                        m_serial.m_DataReceived.disconnect(boost::bind(&Connection::HandleSerialData, shared_from_this(), _1, _2));
-                    }
-                    else
-                    {
-                        // Delay asynchronously 1s after that we will try reconnecing to the server
-                        asio::deadline_timer delay(m_socket.get_io_service(), boost::posix_time::seconds(1));
-                        delay.async_wait(boost::bind(&Connection::Reconnect, shared_from_this()));
-                    }
+                    std::cerr << "Failed: '" << err.message() <<"' in HandleRead on endpoint:" << m_remoteEndpoint << std::endl;
+                    ProcessBrokenConnection();
                 }
             }
             
@@ -147,21 +132,7 @@ namespace SafeEngineering
                 else
                 {
                     std::cerr << "Failed: '" << err.message() <<"' in HandleWrite on endpoint:" << m_remoteEndpoint << std::endl;
-                    // Close underlying socket
-                    m_socket.close();
-                    // Socket have already broken
-                    m_connectedSocket = false;
-                    if(m_serverSide == true)
-                    {
-                        // Signal to acceptor that the connection was dropped
-                        m_ConnectionDropped();
-                        m_serial.m_DataReceived.disconnect(boost::bind(&Connection::HandleSerialData, shared_from_this(), _1, _2));
-                    }
-                    else
-                    {
-                        // Try to reconnect to server
-                        Reconnect();
-                    }
+                    ProcessBrokenConnection();
                 }
             }
             
@@ -175,8 +146,9 @@ namespace SafeEngineering
                 else
                 {
                     std::cerr << "Failed: '" << err.message() <<"' in HandleConnect" << std::endl;
-                    // Try to reconnect to server
-                    Reconnect();
+                    // Delay asynchronously 1s after that we will try reconnecing to the server
+                    asio::deadline_timer delay(m_socket.get_io_service(), boost::posix_time::seconds(1));
+                    delay.async_wait(boost::bind(&Connection::Reconnect, shared_from_this()));
                 }
             }
             
@@ -198,6 +170,26 @@ namespace SafeEngineering
                     boost::bind(&Connection::HandleWrite, shared_from_this(),
                     asio::placeholders::error,
                     asio::placeholders::bytes_transferred));
+            }
+            
+            void ProcessBrokenConnection()
+            {
+                // Close underlying socket
+                m_socket.close();
+                // Socket have already broken
+                m_connectedSocket = false;
+                if(m_serverSide == true)
+                {
+                    // Signal to acceptor that the connection was dropped
+                    m_ConnectionDropped();
+                    m_serial.m_DataReceived.disconnect(boost::bind(&Connection::HandleSerialData, shared_from_this(), _1, _2));
+                }
+                else
+                {
+                    // Delay asynchronously 1s after that we will try reconnecing to the server
+                    asio::deadline_timer delay(m_socket.get_io_service(), boost::posix_time::seconds(1));
+                    delay.async_wait(boost::bind(&Connection::Reconnect, shared_from_this()));
+                }                
             }
             
         private:
