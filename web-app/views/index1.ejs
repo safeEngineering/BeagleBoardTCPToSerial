@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: separate;
+            border-spacing: 2px;
+            width: 600px;
+        }
+
+        td, th {
+            border: 2px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+
+        caption {
+            text-align: left;
+            font-size: 200%;
+            font-family: arial, sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <form>
+        <table>
+            <colgroup>
+                <col style="width:40%">
+                <col style="width:60%">
+            </colgroup>
+            <caption>General Settings</caption>
+            <tr>
+                <th>Name</th>
+                <th>Value</th>
+            </tr>
+            <tr>
+                <td>Unit ID</td>
+                <td align="center">
+                    <select>
+                        <option value="master">Master</option>
+                        <option value="submaster">Sub-Master</option>
+                        <option value="slave1">Slave 1</option>
+                        <option value="slave2">Slave 2</option>
+                        <option value="slave3">Slave 3</option>
+                        <option value="slave4">Slave 4</option>
+                        <option value="slave5">Slave 5</option>
+                        <option value="slave6">Slave 6</option>
+                        <option value="slave7">Slave 7</option>
+                        <option value="slave8">Slave 8</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Site Name</td>
+                <td><input type="text" name="sitename" size="40" value="site name"></td>
+            </tr>
+            <tr>
+                <td>Serial Number</td>
+                <td><input type="text" name="sitename" size="20" value="1234567890"></td>
+            </tr>
+            <tr>
+                <td>RTU Alarm Format</td>
+                <td align="center">
+                    <select>
+                        <option value="MK1">MK1</option>
+                        <option value="MK2">MK2</option>
+                        <option value="MK3">MK3</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Comms Logging Mode</td>
+                <td align="center">
+                    <select>
+                        <option value="normal">Normal</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Communicatiom Mode</td>
+                <td align="center">
+                    <select>
+                        <option value="ethernet">Ethernet</option>
+                        <option value="serial">Serial</option>
+                    </select>
+                </td>
+            </tr>
+        </table>
+        <br />
+        <input type="submit" value="Save">
+    </form>
+</body>
+
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: separate;
+            border-spacing: 2px;
+            width: 400px;
+        }
+
+        td, th {
+            border: 2px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+
+        caption {
+            text-align: left;
+            font-size: 200%;
+            font-family: arial, sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <form>
+        <table>
+            <colgroup>
+                <col style="width:50%">
+                <col style="width:50%">
+            </colgroup>
+            <caption>Netwotk Settings</caption>
+            <tr>
+                <th>Name</th>
+                <th>Value</th>
+            </tr>
+            <tr>
+                <td>IP Address</td>
+                <td><input type="text" name="ipaddress" value="10.0.0.51"></td>
+            </tr>
+            <tr>
+                <td>Subnet</td>
+                <td><input type="text" name="subnet" value="255.255.255.0"></td>
+            </tr>
+            <tr>
+                <td>Gateway</td>
+                <td><input type="text" name="gateway" value="10.0.0.138"></td>
+            </tr>
+            <tr>
+                <td>DNS1</td>
+                <td><input type="text" name="dns1" value="10.0.0.138"></td>
+            </tr>
+            <tr>
+                <td>DNS2</td>
+                <td><input type="text" name="dns2"></td>
+            </tr>
+	    <tr>
+                <td>Connection Port</td>
+                <td><input type="text" name="connectionport" value="33689"></td>
+            </tr>
+            <tr>
+                <td>Ping Interval(ms)</td>
+                <td><input type="text" name="pinginterval" value="10000"></td>
+            </tr>
+        </table>
+        <br />
+        <table style="width:450px">
+            <colgroup>
+                <col style="width:30%">
+                <col style="width:20%">
+                <col style="width:50%">
+            </colgroup>
+            <caption>Controllers</caption>
+            <tr>
+                <th>Unit ID</th>
+                <th>Enabled</th>
+                <th>IP Address</th>
+            </tr>
+            <tr>
+                <td>1</td>
+                <td><input type="checkbox" name="enabled1"></td>
+                <td><input type="text" name="ip1" value="192.168.1.11"></td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td><input type="checkbox" name="enabled1"></td>
+                <td><input type="text" name="ip2" value="192.168.1.12"></td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td><input type="checkbox" name="enabled1"></td>
+                <td><input type="text" name="ip3" value="192.168.1.13"></td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td><input type="checkbox" name="enabled1"></td>
+                <td><input type="text" name="ip4" value="192.168.1.14"></td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td><input type="checkbox" name="enabled1"></td>
+                <td><input type="text" name="ip5" value="192.168.1.15"></td>
+            </tr>
+            <tr>
+                <td>6</td>
+                <td><input type="checkbox" name="enabled6"></td>
+                <td><input type="text" name="ip6" value="192.168.1.16"></td>
+            </tr>
+            <tr>
+                <td>7</td>
+                <td><input type="checkbox" name="enabled7"></td>
+                <td><input type="text" name="ip7" value="192.168.1.17"></td>
+            </tr>
+            <tr>
+                <td>8</td>
+                <td><input type="checkbox" name="enabled8"></td>
+                <td><input type="text" name="ip8" value="192.168.1.18"></td>
+            </tr>
+            <tr>
+                <td>9 (Sub-Master)</td>
+                <td><input type="checkbox" name="enabled9"></td>
+                <td><input type="text" name="ip9" value="192.168.1.19"></td>
+            </tr>
+        </table>
+        <br />
+        <input type="submit" value="Save">
+    </form>
+</body>
+
+</html>
