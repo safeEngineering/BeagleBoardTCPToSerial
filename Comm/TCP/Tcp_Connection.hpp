@@ -21,7 +21,7 @@ namespace SafeEngineering
         public:
             typedef boost::shared_ptr<Connection> pointer;
                         
-            Connection(asio::io_service& io_service, Serial& serial) : m_socket(io_service), m_serial(serial)
+            Connection(asio::io_service& io_service, Serial& serial) : m_socket(io_service), m_delay(io_service), m_serial(serial)
             {
                 // The default is server connection
                 m_serverSide = true;
@@ -146,9 +146,9 @@ namespace SafeEngineering
                 else
                 {
                     std::cerr << "Failed: '" << err.message() <<"' in HandleConnect" << std::endl;
-                    // Delay asynchronously 1s after that we will try reconnecing to the server
-                    asio::deadline_timer delay(m_socket.get_io_service(), boost::posix_time::seconds(1));
-                    delay.async_wait(boost::bind(&Connection::Reconnect, shared_from_this()));
+					// Delay asynchronously 1s after that we will try reconnecing to the server
+                    m_delay.expires_from_now(boost::posix_time::seconds(1));
+		    m_delay.async_wait(boost::bind(&Connection::Reconnect, shared_from_this()));
                 }
             }
             
@@ -187,14 +187,17 @@ namespace SafeEngineering
                 else
                 {
                     // Delay asynchronously 1s after that we will try reconnecing to the server
-                    asio::deadline_timer delay(m_socket.get_io_service(), boost::posix_time::seconds(1));
-                    delay.async_wait(boost::bind(&Connection::Reconnect, shared_from_this()));
-                }                
+		    m_delay.expires_from_now(boost::posix_time::seconds(1));
+                    m_delay.async_wait(boost::bind(&Connection::Reconnect, shared_from_this()));
+                }
             }
             
         private:
             // TCP/IP socket object
             asio::ip::tcp::socket m_socket;
+            // Delay object
+            asio::deadline_timer m_delay;
+            
             // UART/COM serial object
             Serial& m_serial;
             // Buffer holds data received remote endpoint
@@ -212,7 +215,7 @@ namespace SafeEngineering
             bool m_serverSide;
             // The flag specifies whether socket is actually connected or not
             bool m_connectedSocket;
-            
+                        
         };  // Connection class
     }   
     
