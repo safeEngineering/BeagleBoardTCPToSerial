@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style rel="stylesheet" type="text/css">
+        .general_caption {
+            text-align: left;
+            font-size: 200%;
+            font-family: arial, sans-serif;
+            padding: 6px;
+       	}
+
+        label {
+            display: inline-block;
+            width: 180px;
+            text-align: left;
+        }
+
+	.rTable {
+  	    display: table;
+  	    width: 450px;
+	}
+
+	.rTableRow {
+  	    display: table-row;
+	}
+
+	.rTableCell, .rTableHead {
+  	    display: table-cell;
+  	    padding: 6px 18px;
+  	    border: 1px solid #999999;
+    	}
+    </style>
+</head>
+
+  <body>
+    <form method="post">
+      <div class="general_caption">Network Settings</div>
+
+      <div class="rTable">
+        <div class="rTableRow">
+          <div class="rTableHead"><strong>Name</strong></div>
+          <div class="rTableHead"><span style="font-weight: bold;">Value</span></div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+	    <label for="ipaddress">IP Address </label>
+          </div>
+          <div class="rTableCell">
+	    <input type="text" id="ipaddress" name="ipaddress" value="<%= ipaddress %>" style="width:200px;">
+	  </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+	    <label for="subnet">Subnet </label>
+          </div>
+          <div class="rTableCell">
+  	    <input type="text" id="subnet" name="subnet" value="<%= subnet %>" style="width:200px;">
+   	  </div>
+        </div>
+
+        <div class="rTableRow">
+	  <div class="rTableCell">
+            <label for="gateway">Gateway </label>
+          </div>
+	  <div class="rTableCell">
+            <input type="text" id="gateway" name="gateway" value="<%= gateway %>" style="width:200px;">
+ 	  </div>
+        </div>
+
+        <div class="rTableRow">
+	  <div class="rTableCell">
+            <label for="dns1">DNS1 </label>
+	  </div>
+	  <div class="rTableCell">
+            <input type="text" id="dns1" name="dns1" value="<%= dns1 %>" style="width:200px;">
+	  </div>
+        </div>
+
+        <div class="rTableRow">
+	  <div class="rTableCell">
+            <label for="dns2">DNS2 </label>
+	  </div>
+	  <div class="rTableCell">
+            <input type="text" id="dns2" name="dns2" value="<%= dns2 %>" style="width:200px;">
+	  </div>
+        </div>
+
+        <div class="rTableRow">
+	  <div class="rTableCell">
+            <label for="port">Connection Port </label>
+	  </div>
+	  <div class="rTableCell">
+            <input type="text" id="port" name="port" value="<%= port %>" style="width:200px;">
+	  </div>
+        </div>
+
+        <div class="rTableRow">
+	  <div class="rTableCell">
+            <label for="interval">Ping Interval (ms) </label>
+	  </div>
+	  <div class="rTableCell">
+            <input type="text" id="interval" name="interval" value="<%= interval %>" style="width:200px;">
+	  </div>
+        </div>
+      </div>
+
+      <div class="general_caption">Controllers</div>
+
+      <div class="rTable">
+        <div class="rTableRow">
+          <div class="rTableHead"><strong>Unit ID</strong></div>
+	  <div class="rTableHead"><span style="font-weight: bold;">Enabled</span></div>
+          <div class="rTableHead"><span style="font-weight: bold;">Address</span></div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+            <label for="check0" style="width:100px">0 (Master)</label>
+	  </div>
+          <div class="rTableCell">
+            <input type="checkbox" id="check0" name="check0" <%= enable0 == 'true' ? 'checked' : ''%> style="width:60px;text-align:center;">
+	  </div>
+          <div class="rTableCell">
+            <input type="text" id="unit0" name="unit0" value="<%= unit0 %>" style="width:200px;">
+	  </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+            <label for="check1" style="width:100px">1</label>
+          </div>
+          <div class="rTableCell">
+            <input type="checkbox" id="check1" name="check1" <%= enable1 == 'true' ? 'checked' : ''%> style="width:60px;text-align:center;">
+          </div>
+          <div class="rTableCell">
+            <input type="text" id="unit1" name="unit1" value="<%= unit1 %>" style="width:200px;">
+          </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+            <label for="check2" style="width:100px">2</label>
+          </div>
+          <div class="rTableCell">
+            <input type="checkbox" id="check2" name="check2" <%= enable2 == 'true' ? 'checked' : ''%> style="width:60px;text-align:center;">
+          </div>
+          <div class="rTableCell">
+            <input type="text" id="unit2" name="unit2" value="<%= unit2 %>" style="width:200px;">
+          </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+            <label for="check3" style="width:100px">3</label>
+          </div>
+          <div class="rTableCell">
+            <input type="checkbox" id="check3" name="check3" <%= enable3 == 'true' ? 'checked' : ''%> style="width:60px;text-align:center;">
+          </div>
+          <div class="rTableCell">
+            <input type="text" id="unit3" name="unit3" value="<%= unit3 %>" style="width:200px;">
+          </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+            <label for="check4" style="width:100px">4</label>
+          </div>
+          <div class="rTableCell">
+            <input type="checkbox" id="check4" name="check4" <%= enable4 == 'true' ? 'checked' : ''%> style="width:60px;text-align:center;">
+          </div>
+          <div class="rTableCell">
+            <input type="text" id="unit4" name="unit4" value="<%= unit4 %>" style="width:200px;">
+          </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+            <label for="check5" style="width:100px">5</label>
+          </div>
+          <div class="rTableCell">
+            <input type="checkbox" id="check5" name="check5" <%= enable5 == 'true' ? 'checked' : ''%> style="width:60px;text-align:center;">
+          </div>
+          <div class="rTableCell">
+            <input type="text" id="unit5" name="unit5" value="<%= unit5 %>" style="width:200px;">
+          </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+            <label for="check6" style="width:100px">6</label>
+          </div>
+          <div class="rTableCell">
+            <input type="checkbox" id="check6" name="check6" <%= enable6 == 'true' ? 'checked' : ''%> style="width:60px;text-align:center;">
+          </div>
+          <div class="rTableCell">
+            <input type="text" id="unit6" name="unit6" value="<%= unit6 %>" style="width:200px;">
+          </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+            <label for="check7" style="width:100px">7</label>
+          </div>
+          <div class="rTableCell">
+            <input type="checkbox" id="check7" name="check7" <%= enable7 == 'true' ? 'checked' : ''%> style="width:60px;text-align:center;">
+          </div>
+          <div class="rTableCell">
+            <input type="text" id="unit7" name="unit7" value="<%= unit7 %>" style="width:200px;">
+          </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+            <label for="check8" style="width:100px">8</label>
+          </div>
+          <div class="rTableCell">
+            <input type="checkbox" id="check8" name="check8" <%= enable8 == 'true' ? 'checked' : ''%> style="width:60px;text-align:center;">
+          </div>
+          <div class="rTableCell">
+            <input type="text" id="unit8" name="unit8" value="<%= unit8 %>" style="width:200px;">
+          </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+            <label for="check9" style="width:100px">9 (Sub-Master)</label>
+          </div>
+          <div class="rTableCell">
+            <input type="checkbox" id="check9" name="check9" <%= enable9 == 'true' ? 'checked' : ''%> style="width:60px;text-align:center;">
+          </div>
+          <div class="rTableCell">
+            <input type="text" id="unit9" name="unit9" value="<%= unit9 %>" style="width:200px;">
+          </div>
+        </div>
+      </div>
+      
+      <div style="padding:6px;">
+        <input type="submit" value="Submit">
+      </div>
+    </form>
+  </body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style rel="stylesheet" type="text/css">
+        .general_caption {
+            text-align: left;
+            font-size: 200%;
+            font-family: arial, sans-serif;
+            padding: 6px;
+        }
+
+        label {
+            display: inline-block;
+            width: 180px;
+            text-align: left;
+        }
+
+        .rTable {
+            display: table;
+            width: 450px;
+        }
+
+        .rTableRow {
+            display: table-row;
+        }
+
+        .rTableCell, .rTableHead {
+            display: table-cell;
+            padding: 6px 18px;
+            border: 1px solid #999999;
+        }
+    </style>
+</head>
+
+<body>
+   <form method="post">
+      <div class="general_caption">General Settings</div>
+
+      <div class="rTable">
+        <div class="rTableRow">
+          <div class="rTableHead"><strong>Name</strong></div>
+          <div class="rTableHead"><span style="font-weight: bold;">Value</span></div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+	    <label for="unit">Unit ID</label>
+          </div>
+	  <div class="rTableCell">
+            <select id="unit" name="unit">
+              <option value="0" <%= unit == '0' ? 'selected' : ''%>>Master</option>
+              <option value="9" <%= unit == '9' ? 'selected' : ''%>>Sub-Master</option>
+              <option value="1" <%= unit == '1' ? 'selected' : ''%>>Slave 1</option>
+              <option value="2" <%= unit == '2' ? 'selected' : ''%>>Slave 2</option>
+              <option value="3" <%= unit == '3' ? 'selected' : ''%>>Slave 3</option>
+              <option value="4" <%= unit == '4' ? 'selected' : ''%>>Slave 4</option>
+              <option value="5" <%= unit == '5' ? 'selected' : ''%>>Slave 5</option>
+              <option value="6" <%= unit == '6' ? 'selected' : ''%>>Slave 6</option>
+              <option value="7" <%= unit == '7' ? 'selected' : ''%>>Slave 7</option>
+              <option value="8" <%= unit == '8' ? 'selected' : ''%>>Slave 8</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+	    <label for="site">Site Name</label>
+          </div>
+          <div class="rTableCell">
+           <input type="text" id="site" name="site" value="<%= site %>" style="width:250px;">
+          </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+	    <label for="serial">Serial Number</label>
+          </div>
+          <div class="rTableCell">
+	    <input type="text" id="serial" name="serial" value="<%= serial %>" style="width:150px;">
+          </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+	    <label for="alarm">RTU Alarm Format</label>
+          </div>
+          <div class="rTableCell">
+	    <select id="alarm" name="alarm">
+              <option value="mk1" <%= alarm == 'mk1' ? 'selected' : '' %>>MK1</option>
+              <option value="mk2" <%= alarm == 'mk2' ? 'selected' : '' %>>MK2</option>
+              <option value="mk3" <%= alarm == 'mk3' ? 'selected' : '' %>>MK3</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+	    <label for="logmode">Comms Logging Mode</label>
+          </div>
+          <div class="rTableCell">
+            <select id="logmode" name="logmode">
+              <option value="normal" <%= logmode == 'normal' ? 'selected' : '' %>>Normal</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+	    <label for="commmode">Communication Mode</label>
+	  </div>
+          <div class="rTableCell">
+            <select id="commmode" name="commmode">
+              <option value="ethernet" <%= commmode == 'ethernet' ? 'selected' : '' %>>Ethernet</option>
+              <option value="serial" <%= commmode == 'serial' ? 'selected' : '' %>>Serial</option>
+            </select>
+          </div>
+	</div>
+
+      </div>
+      
+      <div style="padding:6px;">
+        <input type="submit" value="Submit">
+      </div>
+   </form>
+</body>
+
+</html>
