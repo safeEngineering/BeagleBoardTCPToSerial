@@ -13,7 +13,7 @@ var ip_address, netmask, gateway_ip, dns_ip1, dns_ip2;
 /* Add route for general page */
 router.get('/general', function(req, res, next) {
   // Read data from json file
-  var jsonString = fs.readFileSync('./settings.json'); 
+  var jsonString = fs.readFileSync('../bridge-app/settings.json'); 
   var jsonObj = JSON.parse(jsonString);
   //console.log(jsonObj);
 
@@ -49,7 +49,7 @@ router.post('/general', function(req, res, next) {
     else 
     {
       // First, read data from json file
-      var jsonString = fs.readFileSync('./settings.json');
+      var jsonString = fs.readFileSync('../bridge-app/settings.json');
       var jsonObj = JSON.parse(jsonString);
 
       // Update new value from GUI
@@ -59,7 +59,7 @@ router.post('/general', function(req, res, next) {
 
       // Save new data to json file
       var newJsonString = JSON.stringify(jsonObj, null, 2);  
-      fs.writeFileSync('./settings.json', newJsonString);
+      fs.writeFileSync('../bridge-app/settings.json', newJsonString);
 
       res.render('success', { message : 'General settings have updated!' });
     }
@@ -69,7 +69,7 @@ router.post('/general', function(req, res, next) {
 /* Add route for network settings page */
 router.get('/network', function(req, res, next) {
   // Read data from json file
-  var jsonString = fs.readFileSync('./settings.json');
+  var jsonString = fs.readFileSync('../bridge-app/settings.json');
   var jsonObj = JSON.parse(jsonString);
 
   dns_ip1 = "";
@@ -207,7 +207,7 @@ router.post('/network', function(req, res, next) {
     else 
     {
       // First, read data from json file
-      var jsonString = fs.readFileSync('./settings.json');
+      var jsonString = fs.readFileSync('../bridge-app/settings.json');
       var jsonObj = JSON.parse(jsonString);
 
       if(req.body.check0 == "on")
@@ -272,7 +272,7 @@ router.post('/network', function(req, res, next) {
 
       // Save new data to json file
       var newJsonString = JSON.stringify(jsonObj, null, 2);
-      fs.writeFileSync('./settings.json', newJsonString);
+      fs.writeFileSync('../bridge-app/settings.json', newJsonString);
 
       //
       // Update network settings
