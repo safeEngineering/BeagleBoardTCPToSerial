@@ -278,19 +278,44 @@ router.post('/network', function(req, res, next) {
       // Update network settings
       // 
 
-      // Get name of cable ethernet resurce
+      // Get name of cable ethernet resource. It can return many resources. Some of them were invalid !!!!!!!!!!!!!!!! 
       var ethResourceDir = shell.ls('/var/lib/connman');
       //console.log(ethResourceDir[0]);
-
+      var ethernetName = '';
+      
       if(dns_ip1 != req.body.dns1 || dns_ip2 != req.body.dns2) {
-        var command1 = "connmanctl config " + ethResourceDir[0] + " --nameservers " + req.body.dns1 + " " + req.body.dns2;
-        console.log(command1);
-        shell.exec(command1, {silent:true}).stdout; 
+        for(var i = 0; i < ethResourceDir.length; i++) {
+  	  if (ethResourceDir[i].indexOf('ethernet') > -1) {
+            var command1 = "connmanctl config " + ethResourceDir[i] + " --nameservers " + req.body.dns1 + " " + req.body.dns2;
+            //console.log(command1);
+            var result1 = shell.exec(command1, {silent:true}); 
+            //console.log(result1);
+            if(result1.stderr == '') {
+              ethernetName = ethResourceDir[i];
+              break;
+            }
+          }
+        }
       }
 
       if(ip_address != req.body.ipaddress || netmask != req.body.subnet || gateway_ip != req.body.gateway) {
-        var command2 = "connmanctl config " + ethResourceDir[0] + " --ipv4 manual " + req.body.ipaddress + " " + req.body.subnet + " " + req.body.gateway;
-        shell.exec(command2, {silent:true}).stdout;
+        if(ethernetName != '') {
+          var command2 = "connmanctl config " + ethernetName + " --ipv4 manual " + req.body.ipaddress + " " + req.body.subnet + " " + req.body.gateway;
+          //console.log(command2);
+          shell.exec(command2, {silent:true});
+        }
+        else {
+          for(var i = 0; i < ethResourceDir.length; i++) {
+            if (ethResourceDir[i].indexOf('ethernet') > -1) {
+              var command2 = "connmanctl config " + ethResourceDir[i] + " --ipv4 manual " + req.body.ipaddress + " " + req.body.subnet + " " + req.body.gateway;
+              //console.log(command2);
+              var result2 = shell.exec(command2, {silent:true});
+              if(result2.stderr == '') {
+                break;
+              }
+            }
+          }
+        }
       }
 
       res.render('success', { message : 'Network settings have updated!' });
