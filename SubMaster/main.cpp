@@ -46,7 +46,7 @@ int main(int argc, char **argv)
                 // Construct TCP/IP object
                 SafeEngineering::Comm::Connection::pointer new_connection = boost::shared_ptr<SafeEngineering::Comm::Connection>(new SafeEngineering::Comm::Connection(ios, serial1));
                 new_connection->Connect(appSettings.Units[i].IPAddress, 10002);                
-                break;  // Now, we connect to one-only-one slave module
+                //break;  // Now, we connect to one-only-one slave module
             }
         }
         
