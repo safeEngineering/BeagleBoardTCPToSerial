@@ -7,7 +7,7 @@
 
 #include <json.hpp>
 
-#define MAX_REMOTE_UNIT_NUMBERS            9
+#define MAX_REMOTE_UNIT_NUMBERS            10
 
 namespace SafeEngineering
 {
@@ -156,7 +156,7 @@ namespace SafeEngineering
                         index++;
                     }
                     
-                    if (index > MAX_REMOTE_UNIT_NUMBERS)
+                    if (index > (MAX_REMOTE_UNIT_NUMBERS - 1))
                         break;
                 }
             }

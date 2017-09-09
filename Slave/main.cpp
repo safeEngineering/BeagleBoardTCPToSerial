@@ -24,8 +24,15 @@ int main(int argc, char **argv)
         // Double-check the ID value was declared for submaster
         if(appSettings.CurrentUnit.ID < 1 || appSettings.CurrentUnit.ID > 8)
         {
-            std::cerr << "Invalid ID in settings.json file" <<std::endl;
+            std::cerr << "Invalid ID in settings.json file" << std::endl;
             return -1;
+        }
+        
+        // Check number of elements in units array
+        if((int)appSettings.Units.size() != MAX_REMOTE_UNIT_NUMBERS)
+        {
+            std::cerr << "Number of units in settings.json file was invalid" << std::endl;
+            return -1;  
         }
         
         asio::io_service ios;
@@ -35,11 +42,11 @@ int main(int argc, char **argv)
         serial1.OpenSerial();
         
         // Listen to connections from Master
-        SafeEngineering::Comm::Acceptor acceptor1(ios, serial1, appSettings.CurrentUnit.IPAddress, 10001);
+        SafeEngineering::Comm::Acceptor acceptor1(ios, serial1, appSettings.CurrentUnit.IPAddress, 10001, appSettings.Units[0].IPAddress);
         acceptor1.AcceptConnections();
         
         // Listen to connections from Submaster
-        SafeEngineering::Comm::Acceptor acceptor2(ios, serial1, appSettings.CurrentUnit.IPAddress, 10002);
+        SafeEngineering::Comm::Acceptor acceptor2(ios, serial1, appSettings.CurrentUnit.IPAddress, 10002, appSettings.Units[9].IPAddress);
         acceptor2.AcceptConnections();
         
         // Run the ASIO service
@@ -50,7 +57,7 @@ int main(int argc, char **argv)
     }
     catch(std::exception& e)
     {
-        std::cerr << "Main thrown exception: '" << e.what() << "'" <<std::endl;
+        std::cerr << "Main thrown exception: '" << e.what() << "'" << std::endl;
     }
     
 	return 0;

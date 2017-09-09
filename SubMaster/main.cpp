@@ -28,6 +28,13 @@ int main(int argc, char **argv)
             return -1;
         }
         
+        // Check number of elements in units array
+        if((int)appSettings.Units.size() != MAX_REMOTE_UNIT_NUMBERS)
+        {
+            std::cerr << "Number of units in settings.json file was invalid" << std::endl;
+            return -1;  
+        }
+        
         asio::io_service ios;
         
         SafeEngineering::Comm::Serial serial1(ios);
@@ -35,7 +42,7 @@ int main(int argc, char **argv)
         serial1.OpenSerial();
         
         // First, listen to connections from master
-        SafeEngineering::Comm::Acceptor acceptor(ios, serial1, appSettings.CurrentUnit.IPAddress, 10001);
+        SafeEngineering::Comm::Acceptor acceptor(ios, serial1, appSettings.CurrentUnit.IPAddress, 10001, appSettings.Units[0].IPAddress);
         acceptor.AcceptConnections();
         
         // Second, make connections to slaves

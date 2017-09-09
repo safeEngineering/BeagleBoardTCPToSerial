@@ -23,8 +23,15 @@ int main(int argc, char **argv)
         // Double-check the ID value was declared for master
         if(appSettings.CurrentUnit.ID != 0)
         {
-            std::cerr << "Invalid ID in settings.json file" <<std::endl;
+            std::cerr << "Invalid ID in settings.json file" << std::endl;
             return -1;
+        }
+        
+        // Check number of elements in units array
+        if((int)appSettings.Units.size() != MAX_REMOTE_UNIT_NUMBERS)
+        {
+            std::cerr << "Number of units in settings.json file was invalid" << std::endl;
+            return -1;  
         }
         
         asio::io_service ios;
@@ -40,11 +47,11 @@ int main(int argc, char **argv)
             if(appSettings.Units[i].Type == SafeEngineering::Utils::UnitType::SUBMASTER)
             {
                 // Construct TCP/IP object
-                SafeEngineering::Comm::Connection::pointer new_connection = boost::shared_ptr<SafeEngineering::Comm::Connection>(new SafeEngineering::Comm::Connection(ios, serial1));
+                SafeEngineering::Comm::Connection::pointer new_connection = boost::shared_ptr<SafeEngineering::Comm::Connection>(new SafeEngineering::Comm::Connection(ios, serial1));                
                 new_connection->Connect(appSettings.Units[i].IPAddress, 10001);
             }
         }
-                
+
         // Second, make connections to slaves
         for(int i = 0; i < (int)appSettings.Units.size(); i++)
         {
@@ -56,7 +63,7 @@ int main(int argc, char **argv)
                 //break;  // Now, we connect to one-only-one slave module
             }
         }
-        
+
         // Run the ASIO service
         ios.run();
                     
@@ -65,7 +72,7 @@ int main(int argc, char **argv)
     }
     catch(std::exception& e)
     {
-        std::cerr << "Main thrown exception: '" << e.what() << "'" <<std::endl;
+        std::cerr << "Main thrown exception: '" << e.what() << "'" << std::endl;
     }
     
 	return 0;

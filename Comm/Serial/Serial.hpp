@@ -163,7 +163,7 @@ namespace SafeEngineering
                 }
                 else
                 {
-                    std::cerr << "Failed: '" << err.message() <<"' when reading data from external device" << std::endl;
+                    std::cerr << "Failed: '" << err.message() << "' when reading data from external device" << std::endl;
                 }
                 
                 if(err != asio::error::operation_aborted)
@@ -192,7 +192,7 @@ namespace SafeEngineering
                 }
                 else
                 {
-                    std::cerr << "Failed: '" << err.message() <<"' when writing data to external device" << std::endl;
+                    std::cerr << "Failed: '" << err.message() << "' when writing data to external device" << std::endl;
                 }
             }
             

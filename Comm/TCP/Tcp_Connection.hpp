@@ -35,7 +35,7 @@ namespace SafeEngineering
             }
 
             // The event will signal whenever connection was dropped
-            boost::signals2::signal<void()> m_ConnectionDropped;
+            boost::signals2::signal<void(Connection::pointer)> m_ConnectionDropped;
 
             // Get underlying TCP/IP socket
             asio::ip::tcp::socket& Socket()
@@ -148,7 +148,7 @@ namespace SafeEngineering
                     std::cerr << "Failed: '" << err.message() <<"' in HandleConnect" << std::endl;
 					// Delay asynchronously 1s after that we will try reconnecing to the server
                     m_delay.expires_from_now(boost::posix_time::seconds(1));
-		    m_delay.async_wait(boost::bind(&Connection::Reconnect, shared_from_this()));
+                    m_delay.async_wait(boost::bind(&Connection::Reconnect, shared_from_this()));
                 }
             }
             
@@ -181,13 +181,13 @@ namespace SafeEngineering
                 if(m_serverSide == true)
                 {
                     // Signal to acceptor that the connection was dropped
-                    m_ConnectionDropped();
+                    m_ConnectionDropped(shared_from_this());
                     m_serial.m_DataReceived.disconnect(boost::bind(&Connection::HandleSerialData, shared_from_this(), _1, _2));
                 }
                 else
                 {
                     // Delay asynchronously 1s after that we will try reconnecing to the server
-		    m_delay.expires_from_now(boost::posix_time::seconds(1));
+                    m_delay.expires_from_now(boost::posix_time::seconds(1));
                     m_delay.async_wait(boost::bind(&Connection::Reconnect, shared_from_this()));
                 }
             }
@@ -211,6 +211,7 @@ namespace SafeEngineering
             // Server connection parameters (it used to reconnect to server)
             std::string m_serverIP;
             int m_serverPort;
+            
             // The flag specifies this connection is client side at or server side
             bool m_serverSide;
             // The flag specifies whether socket is actually connected or not
