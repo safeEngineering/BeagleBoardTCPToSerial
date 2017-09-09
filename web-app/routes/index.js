@@ -71,6 +71,7 @@ router.get('/network', function(req, res, next) {
   // Read data from json file
   var jsonString = fs.readFileSync('../bridge-app/settings.json');
   var jsonObj = JSON.parse(jsonString);
+  //console.log(jsonObj);
 
   dns_ip1 = "";
   dns_ip2 = "";
@@ -81,6 +82,17 @@ router.get('/network', function(req, res, next) {
   else if(dnsServers.length == 2) {
     dns_ip1 = dnsServers[0];
     dns_ip2 = dnsServers[1];
+  }
+
+  // Get current NTP servers from configuration file of systemd-timesyncd
+  var ntpservers = '';
+  var ntpConfig = fs.readFileSync('/etc/systemd/timesyncd.conf', 'utf8');
+  var lines = ntpConfig.split('\n');
+  // Find row that holds NTP servers (row begins with NTP=)
+  for(var i = 0; i < lines.length; i++) {
+    if(lines[i].indexOf('NTP=') == 0) {
+      ntpservers = lines[i].substr(4);
+    }
   }
 
   network.get_active_interface(function(err, obj) {
@@ -101,6 +113,7 @@ router.get('/network', function(req, res, next) {
 			    dns2: dns_ip2,
  			    port: '33689',
 			    interval: '10000',
+			    ntpservers: ntpservers,
   			    enable0: (jsonObj.units[0].unit_type == "master" ? 'true' : 'false'),
 			    unit0: jsonObj.units[0].unit_ipaddr,
  			    enable1: (jsonObj.units[1].unit_type == "slave" ? 'true' : 'false'),
@@ -206,6 +219,28 @@ router.post('/network', function(req, res, next) {
     }
     else 
     {
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // Update NTP Servers
+      /////////////////////////////////////////////////////////////////////////////////////////////
+
+      // First, get current NTP servers from configuration file of systemd-timesyncd
+      var ntpConfig = fs.readFileSync('/etc/systemd/timesyncd.conf', 'utf8');
+      var lines = ntpConfig.split('\n');
+      // Find row that holds NTP servers (row begins with NTP=)
+      for(var i = 0; i < lines.length; i++) {
+        if(lines[i].indexOf('NTP=') == 0) {
+          lines[i] = 'NTP=' + req.body.ntpservers;
+          console.log(lines[i]);
+        }
+      }
+      // Write new string array to file
+      fs.writeFileSync('/etc/systemd/timesyncd.conf', lines.join('\n'));
+
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // Update JSON/Text file
+      /////////////////////////////////////////////////////////////////////////////////////////////
+
       // First, read data from json file
       var jsonString = fs.readFileSync('../bridge-app/settings.json');
       var jsonObj = JSON.parse(jsonString);
