@@ -4,8 +4,10 @@
     <style rel="stylesheet" type="text/css">
         .general_caption {
             text-align: left;
-            font-size: 200%;
-            font-family: arial, sans-serif;
+            font-size: 180%;
+            font-family: arial, serif;
+            color:#808080;
+            font-weight: bold;
             padding: 6px;
         }
 
@@ -15,38 +17,103 @@
             text-align: left;
         }
 
-        .rTable {
-            display: table;
-            width: 450px;
-        }
+  .rTable {
+        border-collapse: collapse;
+        border: 1px solid #808080;
+        padding: 8px;
+        display: table;
+        color:#808080;
+  }
 
-        .rTableRow {
-            display: table-row;
-        }
+  .rTableRow {
+        display: table-row;
+        border: 1px solid #808080;
+        padding: 8px;
+        color:#808080;
+  }
 
-        .rTableCell, .rTableHead {
-            display: table-cell;
-            padding: 6px 18px;
-            border: 1px solid #999999;
-        }
+  .rTableCell, .rTableHead {
+      font-family: arial, serif;
+      color:#808080;
+      display: table-cell;
+      column-width: 100px;
+      vertical-align: middle;
+      height: 25px;
+      border: 1px solid #808080;
+      padding: 8px;
+      color:#808080;      
+      }
+
+  .rTableHead2 {
+      font-family: arial, serif;
+      color:#000000;
+      display: table-cell;
+      column-width: 100px;
+      vertical-align: middle;
+      height: 25px;
+      border: 1px solid #808080;
+      padding: 8px;
+      background-color: #D3D3D3;
+}   
+    ul {
+        float:left;
+        list-style-type: none;
+        margin: 0px 40px 0px 0px;
+        padding: 0;
+        width: 150px;
+        background-color: #808080;
+        height:1125px;
+    }
+
+    li a {
+        font-family: arial, serif;
+        display: block;
+        color: #ffffff;
+        padding: 8px 16px;
+        text-decoration: none;
+    }
+
+    li b {
+        display: block;
+        background-color: #555;
+        padding: 8px 16px;
+        text-decoration: none;
+    }
+
+    /* Change the link color on hover */
+    li a:hover {
+        background-color: #555;
+        color: white;
+    }
     </style>
+
 </head>
-
-<body>
+  <body>
    <form method="post">
+  <ul>
+    <li><b><img src="/images/logo.png" height="30" width="120" href="website.html"></b></li>
+    <li><a href="general">General</a></li>
+    <li><a href="network">Network</a></li>
+    <li><a href="#Idle">Idle</a></li>
+    <li><a href="#Settings">Settings</a></li>
+    <li><a href="#Fault">Fault</a></li>
+    <li><a href="#Debug">Debug</a></li>
+  </ul>
+  <img src="/images/logo.png" height="60" width="250">
+      <br></br>
       <div class="general_caption">General Settings</div>
-
+      <p></p>
       <div class="rTable">
         <div class="rTableRow">
-          <div class="rTableHead"><strong>Name</strong></div>
-          <div class="rTableHead"><span style="font-weight: bold;">Value</span></div>
+          <div class="rTableHead2"><strong>Name</strong></div>
+          <div class="rTableHead2"><span style="font-weight: bold;">Value</span></div>
         </div>
 
         <div class="rTableRow">
           <div class="rTableCell">
-	    <label for="unit">Unit ID</label>
+      <label for="unit">Unit ID</label>
           </div>
-	  <div class="rTableCell">
+    <div class="rTableCell">
             <select id="unit" name="unit">
               <option value="0" <%= unit == '0' ? 'selected' : ''%>>Master</option>
               <option value="9" <%= unit == '9' ? 'selected' : ''%>>Sub-Master</option>
@@ -64,7 +131,7 @@
 
         <div class="rTableRow">
           <div class="rTableCell">
-	    <label for="site">Site Name</label>
+      <label for="site">Site Name</label>
           </div>
           <div class="rTableCell">
            <input type="text" id="site" name="site" value="<%= site %>" style="width:250px;">
@@ -73,19 +140,19 @@
 
         <div class="rTableRow">
           <div class="rTableCell">
-	    <label for="serial">Serial Number</label>
+      <label for="serial">Serial Number</label>
           </div>
           <div class="rTableCell">
-	    <input type="text" id="serial" name="serial" value="<%= serial %>" style="width:150px;">
+      <input type="text" id="serial" name="serial" value="<%= serial %>" style="width:150px;">
           </div>
         </div>
 
         <div class="rTableRow">
           <div class="rTableCell">
-	    <label for="alarm">RTU Alarm Format</label>
+      <label for="alarm">RTU Alarm Format</label>
           </div>
           <div class="rTableCell">
-	    <select id="alarm" name="alarm">
+      <select id="alarm" name="alarm">
               <option value="mk1" <%= alarm == 'mk1' ? 'selected' : '' %>>MK1</option>
               <option value="mk2" <%= alarm == 'mk2' ? 'selected' : '' %>>MK2</option>
               <option value="mk3" <%= alarm == 'mk3' ? 'selected' : '' %>>MK3</option>
@@ -95,7 +162,7 @@
 
         <div class="rTableRow">
           <div class="rTableCell">
-	    <label for="logmode">Comms Logging Mode</label>
+      <label for="logmode">Comms Logging Mode</label>
           </div>
           <div class="rTableCell">
             <select id="logmode" name="logmode">
@@ -106,15 +173,15 @@
 
         <div class="rTableRow">
           <div class="rTableCell">
-	    <label for="commmode">Communication Mode</label>
-	  </div>
+      <label for="commmode">Communication Mode</label>
+    </div>
           <div class="rTableCell">
             <select id="commmode" name="commmode">
               <option value="ethernet" <%= commmode == 'ethernet' ? 'selected' : '' %>>Ethernet</option>
               <option value="serial" <%= commmode == 'serial' ? 'selected' : '' %>>Serial</option>
             </select>
           </div>
-	</div>
+  </div>
 
       </div>
       

@@ -2,6 +2,8 @@ var express = require('express');
 var fs = require('fs');
 var util = require('util');
 var router = express.Router();
+var expressValidator = require('express-validator');  //Added by Adrian to get it to work
+router.use(expressValidator());  //Added by Adrian to get it to work
 var dns = require('dns');
 
 var shell = require('shelljs');    // install by run 'npm install shelljs' in directory web-app
