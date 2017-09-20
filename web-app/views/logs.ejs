@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style rel="stylesheet" type="text/css">
+        .general_caption {
+            text-align: left;
+            font-size: 180%;
+            font-family: arial, serif;
+            color:#808080;
+            font-weight: bold;
+            padding: 6px;
+        }
+
+        label {
+            display: inline-block;
+            width: 180px;
+            text-align: left;
+        }
+
+  .rTable {
+        border-collapse: collapse;
+        border: 1px solid #808080;
+        padding: 8px;
+        display: table;
+        color:#808080;
+  }
+
+  .rTableRow {
+        display: table-row;
+        border: 1px solid #808080;
+        padding: 8px;
+        color:#808080;
+  }
+
+  .rTableCell, .rTableHead {
+      font-family: arial, serif;
+      color:#808080;
+      display: table-cell;
+      column-width: 100px;
+      vertical-align: middle;
+      height: 25px;
+      border: 1px solid #808080;
+      padding: 8px;
+      color:#808080;      
+      }
+
+  .rTableHead2 {
+      font-family: arial, serif;
+      color:#000000;
+      display: table-cell;
+      column-width: 100px;
+      vertical-align: middle;
+      height: 25px;
+      border: 1px solid #808080;
+      padding: 8px;
+      background-color: #D3D3D3;
+}   
+    ul {
+        float:left;
+        list-style-type: none;
+        margin: 0px 40px 0px 0px;
+        padding: 0;
+        width: 150px;
+        background-color: #808080;
+        height:1125px;
+    }
+
+    li a {
+        font-family: arial, serif;
+        display: block;
+        color: #ffffff;
+        padding: 8px 16px;
+        text-decoration: none;
+    }
+
+    li b {
+        display: block;
+        background-color: #555;
+        padding: 8px 16px;
+        text-decoration: none;
+    }
+
+    /* Change the link color on hover */
+    li a:hover {
+        background-color: #555;
+        color: white;
+    }
+    </style>
+
+</head>
+  <body>
+   <form method="post">
+  <ul>
+    <li><b><img src="/images/logo.png" height="30" width="120" href="website.html"></b></li>
+    <li><a href="general">General</a></li>
+    <li><a href="network">Network</a></li>
+    <li><a href="logs">Logs</a></li>
+  </ul>
+  <img src="/images/logo.png" height="60" width="250">
+      <br></br>
+      <div class="general_caption">Logs</div>
+      <p></p>
+      <% for(var i=0; i<logFiles.length; i++) { %>
+            <p><a href='/log/<%= logFiles[i] %>'>
+                <%= logFiles[i] %>
+            </p>
+    <% } %>
+   </form>
+</body>
+
+</html>
