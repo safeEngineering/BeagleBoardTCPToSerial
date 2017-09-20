@@ -12,6 +12,33 @@ var network = require('network');  // install by run 'npm install network' in di
 // Module variables
 var ip_address, netmask, gateway_ip, dns_ip1, dns_ip2;
 
+
+/* Add route for logs page */
+router.get('/logs', function(req, res, next) {
+ 
+   var logFiles = [];
+   var subArray = null;
+			
+	fs.readdir('/home/debian/web-app/public/logs', function(err,files) {
+		if (err) {
+			res.render('error', { message: err });
+		} else {
+			files.sort();
+			/* console.log(files);  */
+			var index = 0;
+			for (index = 0; index < files.length; index++) {
+				logFiles.push(files[index]);
+			}
+			
+			//console.log(logFiles); 
+
+			res.render('logs', {logFiles:logFiles});
+		}
+	});
+
+});
+
+
 /* Add route for general page */
 router.get('/general', function(req, res, next) {
   // Read data from json file
