@@ -10,6 +10,12 @@
 
 #include <Serial.hpp>
 
+#include "Utils.hpp"
+
+#include <string>
+#include "spdlog/spdlog.h"
+#include "DailyFileSink.hpp"
+
 #define SOCKET_BUFFER_LENGTH            100
 
 namespace SafeEngineering
@@ -96,6 +102,9 @@ namespace SafeEngineering
             {
                 asio::ip::tcp::endpoint ep(asio::ip::address::from_string(m_serverIP), m_serverPort);
                 std::cout << "Trying to reconnect to " << ep << std::endl;
+	            
+	            spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << "Trying to reconnect to " << ep;
+
                 m_socket.async_connect(ep, boost::bind(&Connection::HandleConnect, shared_from_this(), asio::placeholders::error));
             }
             
@@ -105,6 +114,14 @@ namespace SafeEngineering
                 {
                     std::cout << "Received " << bytes_received << " bytes from remote endpoint:" << m_remoteEndpoint << std::endl;
                     std::cout << Utils::ConvertToHex(m_buffer, bytes_received) << std::endl;
+	                
+	                /***************************************************/                    
+	                //AE Modify Data for return echo for testing.
+	                if (bytes_received > 5)
+	                {
+		            //    m_buffer[5] = 0x48;    
+	                }
+                    /***************************************************/                    
                     
                     // Send data to UART port
                     std::cout << "Forward packet to external UART device" << std::endl;
@@ -146,7 +163,10 @@ namespace SafeEngineering
                 else
                 {
                     std::cerr << "Failed: '" << err.message() <<"' in HandleConnect" << std::endl;
-					// Delay asynchronously 1s after that we will try reconnecing to the server
+					
+	                spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << "Failed: '" << err.message() << "' in HandleConnect";
+
+	                // Delay asynchronously 1s after that we will try reconnecing to the server
                     m_delay.expires_from_now(boost::posix_time::seconds(1));
                     m_delay.async_wait(boost::bind(&Connection::Reconnect, shared_from_this()));
                 }
@@ -185,7 +205,9 @@ namespace SafeEngineering
                     m_serial.m_DataReceived.disconnect(boost::bind(&Connection::HandleSerialData, shared_from_this(), _1, _2));
                 }
                 else
-                {
+                {	                
+	                spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << "Trying to reconnect to ";
+
                     // Delay asynchronously 1s after that we will try reconnecing to the server
                     m_delay.expires_from_now(boost::posix_time::seconds(1));
                     m_delay.async_wait(boost::bind(&Connection::Reconnect, shared_from_this()));

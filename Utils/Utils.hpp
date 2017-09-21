@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <array>
+#include <chrono>
 
 #include <json.hpp>
 
@@ -37,10 +38,44 @@ namespace SafeEngineering
             // Not used yet
             std::string Version;
             // Parameters of current unit
-            Unit CurrentUnit;
+	        std::string SiteName;
+	        Unit CurrentUnit;
             // Parameters of the remote boards in the system
             std::array<Unit, MAX_REMOTE_UNIT_NUMBERS> Units;
         } Settings;
+	    
+	    inline std::string timeString(const std::chrono::system_clock::time_point& tp)
+	    {
+		    time_t t = std::chrono::system_clock::to_time_t(tp);
+		    tm* ptm = std::localtime(&t);
+		    char szDateBuffer[128];
+		    size_t nStartLength = strftime(szDateBuffer, 128, "[%d-%m-%Y %H:%M:%S.", ptm);
+
+		    auto duration = tp.time_since_epoch();
+		    auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() % 1000;
+
+		    size_t nEndLength = sprintf(&szDateBuffer[nStartLength], "%03u]", (unsigned int)millis);
+
+		    return std::string(szDateBuffer, nStartLength + nEndLength);
+	    }
+
+	    inline std::string string_to_hex(const std::string& input)
+	    {
+		    static const char* const lut = "0123456789ABCDEF";
+		    size_t len = input.length();
+
+		    std::string output;
+		    output.reserve(2 * len);
+		    for (size_t i = 0; i < len; ++i)
+		    {
+			    const unsigned char c = input[i];
+			    output.push_back('<');
+			    output.push_back(lut[c >> 4]);
+			    output.push_back(lut[c & 15]);
+			    output.push_back('>');
+		    }
+		    return output;
+	    }
         
         inline std::string ConvertToHex(uint8_t byte)
         {
@@ -86,6 +121,38 @@ namespace SafeEngineering
                 // Deserialize json object from text content
                 jsonFile >> settingsjson;
                 
+	            auto sitename = settingsjson.find("site_name");
+	            if (sitename != settingsjson.end())
+	            {
+		            settings.SiteName = sitename->get<std::string>();
+		            
+		            std::string s;
+		            
+		            if (settings.SiteName.length() > 16)
+		            {
+			            s  = settings.SiteName.erase(16, settings.SiteName.length());			                
+		            }
+		            else
+		            {
+			            s = settings.SiteName;
+		            }
+			        
+		            //Remove Illegal File Name Characters
+		            std::replace(s.begin(), s.end(), ' ', '_'); 
+		            std::replace(s.begin(), s.end(), '/', '_'); 
+		            std::replace(s.begin(), s.end(), '\\', '_');
+		            std::replace(s.begin(), s.end(), '*', '_');
+		            std::replace(s.begin(), s.end(), '~', '_'); 
+		            std::replace(s.begin(), s.end(), '?', '_'); 
+		            std::replace(s.begin(), s.end(), '`', '_'); 
+		            
+		            settings.SiteName = s;
+		            
+		            std::cout << "SiteName: " << settings.SiteName << std::endl;
+		            
+		            
+	            }
+	            
                 auto ver = settingsjson.find("version");
                 if(ver != settingsjson.end())
                 {
