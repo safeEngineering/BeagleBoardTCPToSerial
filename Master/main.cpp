@@ -193,6 +193,32 @@ int main(int argc, char **argv)
 				    //break;  // Now, we connect to one-only-one slave module
 			    }
 		    }
+		    
+		    InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);
+        	    	    
+			// Run the ASIO service
+		    try
+		    {	    	    
+			    ios.run();
+		    }
+		    catch (const std::exception& ex)
+		    {
+			    std::cerr << "Controller stopped with an exception: " << ex.what();		    
+		    }
+		    catch (...)
+		    {
+			    std::cerr << "Controller stopped with unexpected exception";		    
+		    }
+		    
+		    spdlog::get("E23DataLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Ending";		
+		    spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Ending";
+		
+			// Release and close all loggers
+		    spdlog::get("E23DataLog")->flush();
+		    spdlog::get("E23StatusLog")->flush();
+		
+		    spdlog::drop_all();
+		    
 	    }
 	    else if (appSettings.CurrentUnit.Type == SafeEngineering::Utils::UnitType::SUBMASTER)	    
 	    {
@@ -217,6 +243,31 @@ int main(int argc, char **argv)
 				    //break;  // Now, we connect to one-only-one slave module
 			    }
 		    }
+		    
+		    InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);
+        	    	    
+			// Run the ASIO service
+		    try
+		    {	    	    
+			    ios.run();
+		    }
+		    catch (const std::exception& ex)
+		    {
+			    std::cerr << "Controller stopped with an exception: " << ex.what();		    
+		    }
+		    catch (...)
+		    {
+			    std::cerr << "Controller stopped with unexpected exception";		    
+		    }
+		    
+		    spdlog::get("E23DataLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Ending";		
+		    spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Ending";
+		
+			// Release and close all loggers
+		    spdlog::get("E23DataLog")->flush();
+		    spdlog::get("E23StatusLog")->flush();
+		
+		    spdlog::drop_all();
 	    }
 	    else if (appSettings.CurrentUnit.Type == SafeEngineering::Utils::UnitType::SLAVE)	    
 	    {
@@ -233,6 +284,31 @@ int main(int argc, char **argv)
 			// Listen to connections from Submaster
 		    SafeEngineering::Comm::Acceptor acceptor2(ios, serial1, appSettings.CurrentUnit.IPAddress, 10002, appSettings.Units[8].IPAddress);  //AE [8] was [9]
 		    acceptor2.AcceptConnections();
+		    
+		    InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);
+        	    	    
+			// Run the ASIO service
+		    try
+		    {	    	    
+			    ios.run();
+		    }
+		    catch (const std::exception& ex)
+		    {
+			    std::cerr << "Controller stopped with an exception: " << ex.what();		    
+		    }
+		    catch (...)
+		    {
+			    std::cerr << "Controller stopped with unexpected exception";		    
+		    }
+		    
+		    spdlog::get("E23DataLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Ending";		
+		    spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Ending";
+		
+			// Release and close all loggers
+		    spdlog::get("E23DataLog")->flush();
+		    spdlog::get("E23StatusLog")->flush();
+		
+		    spdlog::drop_all();
 	        
 	    }
 	    else 
@@ -242,32 +318,7 @@ int main(int argc, char **argv)
 		    return -1;  		    
 	    }
 				
-	    InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);
-        	    
-	    
-        // Run the ASIO service
-	    try
-	    {	    	    
-		    ios.run();
-	    }
-	    catch (const std::exception& ex)
-	    {
-		    std::cerr << "Controller stopped with an exception: " << ex.what();		    
-	    }
-	    catch (...)
-	    {
-		    std::cerr << "Controller stopped with unexpected exception";		    
-	    }
-	    
-	    spdlog::get("E23DataLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Ending";		
-	    spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Ending";
-		
-		// Release and close all loggers
-	    spdlog::get("E23DataLog")->flush();
-	    spdlog::get("E23StatusLog")->flush();
-		
-		spdlog::drop_all();
-	    	    
+	    	   	    	    
         // Close UART connection
         serial1.CloseSerial();
 	     
