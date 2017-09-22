@@ -108,7 +108,7 @@ void InitialiseLogFiles(std::string siteName, SafeEngineering::Utils::UnitType u
 		{
 			spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Starting E23 Status Log (SUBMASTER)";
 		}
-		if (unitType == SafeEngineering::Utils::UnitType::SLAVE)	    
+		else if (unitType == SafeEngineering::Utils::UnitType::SLAVE)	    
 		{
 			spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Starting E23 Status Log (SLAVE)";
 		}
