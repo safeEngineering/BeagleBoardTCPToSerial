@@ -22,7 +22,7 @@
 #include "spdlog/spdlog.h"
 #include "DailyFileSink.hpp"
 
-#define SIM_MASTER_MODE 1
+//#define SIM_MASTER_MODE 1
 
 namespace SafeEngineering
 {
