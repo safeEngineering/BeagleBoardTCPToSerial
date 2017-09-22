@@ -10,6 +10,7 @@
 #include "FileUtil.h"
 #include "DailyFileSink.h"
 #include "spdlog\spdlog.h"
+#include "Utils.hpp"
 #include <cstdio>
 #include <iostream>
 #include <memory>
@@ -43,6 +44,15 @@ int main(int argc, char *argv[])
             bStdErr = true;
         }
     }
+	
+	SafeEngineering::Utils::Settings appSettings;
+	if (SafeEngineering::Utils::LoadSettings(appSettings) == false)
+	{
+		std::cerr << "Main() function failed to load settings from json/text file" << std::endl;
+		return -1;            
+	}
+	
+	std::cout << "SITENAME : '" << appSettings.SiteName << "'" << std::endl;
 
     spdlog::set_async_mode(8192, spdlog::async_overflow_policy::block_retry, nullptr, std::chrono::milliseconds(5000));
 
@@ -55,14 +65,14 @@ int main(int argc, char *argv[])
     {
         sinks.push_back(std::make_shared<spdlog::sinks::stderr_sink_st>());
     }
-    sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(strLogPath + "/logDump", "txt", 8 * 1024 * 1024, 3, false));
+	sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(strLogPath + "DebugStatusLog-" + appSettings.SiteName, "txt", 8 * 1024 * 1024, 3, false));
     auto log = spdlog::create("log", begin(sinks), end(sinks));
     log->set_pattern("[%d-%m-%Y %H:%M:%S.%e] [%l] %v");
     // FIXME: level should be err normally
     log->set_level(spdlog::level::warn);
 
     std::vector<spdlog::sink_ptr> test_sinks;
-    test_sinks.push_back(std::make_shared<aurizon::DailyFileSink_st>(strLogPath, "dump_log", "txt", 40, false));
+	test_sinks.push_back(std::make_shared<aurizon::DailyFileSink_st>(strLogPath, "DebugDataLog-" + appSettings.SiteName, "txt", 40, false));
     auto test_log = spdlog::create("test_log", begin(test_sinks), end(test_sinks));
     test_log->set_pattern("%v");
 
