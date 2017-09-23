@@ -234,6 +234,10 @@ namespace SafeEngineering
 	        {
 		        
 		        int sendreply = false;
+		        char IPAddress[8 + 1];
+		        char *IPAddrPtr;
+		        char DateTimeStr[12 + 1];
+		        char *DateTimePtr;
 		        
 		        memcpy(m_loopbuffer, pPacket, len);
 		        m_loopbufferLen = len;
@@ -250,39 +254,84 @@ namespace SafeEngineering
 						return true;			   //Ignore these commands and do not reply to them
 					}
 			     
-			        if (m_loopbuffer[1] == 0xE6)  // 0x30, 0x30 indictes offline
+			        if (m_loopbuffer[1] == 0xE6)  // Cycle Thru Commands Below
 			        {
-				        tmp_cntr++;
-				        if (tmp_cntr > 10)
+				        lcd_update_cntr++;
+				        switch(lcd_update_cntr)
 				        {
-					        m_loopbuffer[2] = 0x30;
-					        m_loopbuffer[3] = 0x30;				            
-				        }
-				        else
-				        {
-					        m_loopbuffer[2] = 0x31;
-					        m_loopbuffer[3] = 0x31;
-				        }
-				        m_loopbuffer[4] = 0x0D;
-				        m_loopbuffer[5] = 0x0A;
-				        sendreply = true;
+							case 1:
+									m_loopbuffer[1] = 0xEA;
+									break;
+							case 2:
+									m_loopbuffer[1] = 0xEB;
+									break;
+							case 3:
+									m_loopbuffer[1] = 0xEC;
+									break;
+							case 4:
+									m_loopbuffer[1] = 0xED;
+									break;					       
+							case 5:
+									//Attempt Non Requested Time Synch to QRFL only twice after starting program, Requested Time Synchs that occur when the QRFL is reset can be done as many times are required
+									if (time_set > 0)
+									{
+										m_loopbuffer[1] = 0xEE;	
+										time_set--;
+									}
+									else
+									{
+										m_loopbuffer[1] = 0xE5;									
+									}
+									break;
+							case 6:
+									//Attempt Non Requested Date Synch to QRFL only twice after starting program, Requested Date Synchs that occur when the QRFL is reset can be done as many times are required									
+									if (date_set > 0)
+									{
+										m_loopbuffer[1] = 0xEF;	
+										date_set--;
+									}
+									else
+									{
+										m_loopbuffer[1] = 0xE5;									
+									}
+									break;							
+							default:
+									if ((tmp_cntr % 5) == 0)
+									{
+										m_loopbuffer[2] = 0x30;   // 0x30, 0x30 indictes offline
+										m_loopbuffer[3] = 0x30;				            
+									}
+									else
+									{
+										m_loopbuffer[2] = 0x31;   // 0x31, 0x31 indictes online
+										m_loopbuffer[3] = 0x31;
+									}
+									m_loopbuffer[4] = 0x0D;
+									m_loopbuffer[5] = 0x0A;
+									sendreply = true;
+									lcd_update_cntr = 0;
+				        
+				        }				        					    				        
 			        }
-			        if (m_loopbuffer[1] == 0xE5)  // 0x30, 0x30 indictes offline
+			        
+			        if (m_loopbuffer[1] == 0xE5) 
 			        {
-				        if (tmp_cntr > 10)
+				        tmp_cntr++;				//Temporary Toggle of ON line and Offline
+				        if ((tmp_cntr % 5) == 0)
 				        {
-					        m_loopbuffer[2] = 0x30;
+					        m_loopbuffer[2] = 0x30;   // 0x30, 0x30 indictes offline
 					        m_loopbuffer[3] = 0x30;				            
 				        }
 				        else
 				        {
-					        m_loopbuffer[2] = 0x31;
+					        m_loopbuffer[2] = 0x31;   // 0x31, 0x31 indictes online
 					        m_loopbuffer[3] = 0x31;
 				        }
 				        m_loopbuffer[4] = 0x0D;
 				        m_loopbuffer[5] = 0x0A;
 				        sendreply = true;
 			        } 
+			        
 			        if (m_loopbuffer[1] == 0xEA) // Software Version V1R23
 			        {
 				        m_loopbuffer[2] = 0x56;
@@ -308,57 +357,68 @@ namespace SafeEngineering
 				        sendreply = true;
 			        }
 			        
-			        if (m_loopbuffer[1] == 0xEC)  // IP Part A and B  192.168
+			        if ((m_loopbuffer[1] == 0xEC)  || (m_loopbuffer[1] == 0xED))   // IP Commands
 			        {
-				        m_loopbuffer[2] = 0x3C;
-				        m_loopbuffer[3] = 0x30;
-				        m_loopbuffer[4] = 0x3A;
-				        m_loopbuffer[5] = 0x38;
-				        m_loopbuffer[6] = 0x30;
-				        m_loopbuffer[7] = 0x0D;
-				        m_loopbuffer[8] = 0x0A;
-				        sendreply = true;
+
+				        IPAddrPtr = SafeEngineering::Utils::GetIPAddressLCDString(IPAddress, sizeof(IPAddress));	    	    
+				        std::cout << "IP ADDRESS CALCULATION : " << IPAddress << std::endl;
+			       			        
+				        if (m_loopbuffer[1] == 0xEC)  // IP Part A and B  192.168
+				        {
+					        m_loopbuffer[2] = IPAddress[0];
+					        m_loopbuffer[3] = IPAddress[1];
+					        m_loopbuffer[4] = IPAddress[2];
+					        m_loopbuffer[5] = IPAddress[3];
+					        m_loopbuffer[6] = 0x30;
+					        m_loopbuffer[7] = 0x0D;
+					        m_loopbuffer[8] = 0x0A;
+					        sendreply = true;
+				        }
+			        
+				        if (m_loopbuffer[1] == 0xED) // IP Part C and D  236.201
+				        {
+					        m_loopbuffer[2] = IPAddress[4];
+					        m_loopbuffer[3] = IPAddress[5];
+					        m_loopbuffer[4] = IPAddress[6];
+					        m_loopbuffer[5] = IPAddress[7];
+					        m_loopbuffer[6] = 0x30;
+					        m_loopbuffer[7] = 0x0D;
+					        m_loopbuffer[8] = 0x0A;
+					        sendreply = true;
+				        }
 			        }
 			        
-			        if (m_loopbuffer[1] == 0xED) // IP Part C and D  236.201
-			        {
-				        m_loopbuffer[2] = 0x3E;
-				        m_loopbuffer[3] = 0x3C;
-				        m_loopbuffer[4] = 0x3C;
-				        m_loopbuffer[5] = 0x39;
-				        m_loopbuffer[6] = 0x30;
-				        m_loopbuffer[7] = 0x0D;
-				        m_loopbuffer[8] = 0x0A;
-				        sendreply = true;
-			        }
 			        
-			        if (m_loopbuffer[1] == 0xEE) //Time HH MM SS
+			        if ((m_loopbuffer[1] == 0xEE)  || (m_loopbuffer[1] == 0xEF))   // Date/Time Commands
 			        {
-				        //Echo Back the current time for the moment
-				        //m_loopbuffer[2] = 0x31;
-				        //m_loopbuffer[3] = 0x39;
-				        //m_loopbuffer[4] = 0x35;
-				        //m_loopbuffer[5] = 0x37;
-				        //m_loopbuffer[6] = 0x30;
-				        //m_loopbuffer[7] = 0x30;
-				        //m_loopbuffer[8] = 0x0A;
-				        sendreply = true;
-			        }
+				        DateTimePtr = SafeEngineering::Utils::GetDateTimeLCDString(DateTimeStr, sizeof(DateTimeStr), std::chrono::system_clock::now());	    	    
+				        std::cout << "DATE TIME CALCULATION : " << DateTimeStr << std::endl;
+				        
+									       			        				        
+				        if (m_loopbuffer[1] == 0xEE) //Time HH MM SS,
+				        {
+				        	m_loopbuffer[2] = DateTimeStr[0];
+					        m_loopbuffer[3] = DateTimeStr[1];
+					        m_loopbuffer[4] = DateTimeStr[2];
+					        m_loopbuffer[5] = DateTimeStr[3];
+					        m_loopbuffer[6] = DateTimeStr[4];
+					        m_loopbuffer[7] = DateTimeStr[5];
+				        	m_loopbuffer[8] = 0x0A;
+					        sendreply = true;
+				        }
 			        
-			        if (m_loopbuffer[1] == 0xEF) //Date YY - MM - DD
-			        {
-				        //Echo Back the current date for the moment
-				        //m_loopbuffer[2] = 0x31;
-				        //m_loopbuffer[3] = 0x37;
-				        //m_loopbuffer[4] = 0x30;
-				        //m_loopbuffer[5] = 0x38;
-				        //m_loopbuffer[6] = 0x32;
-				        //m_loopbuffer[7] = 0x31;
-				        //m_loopbuffer[7]++;
-				        //m_loopbuffer[8] = 0x0A;
-				        sendreply = true;
-			        }
-		            
+				        if (m_loopbuffer[1] == 0xEF) //Date YY - MM - DD
+				        {
+					        m_loopbuffer[2] = DateTimeStr[6];
+					        m_loopbuffer[3] = DateTimeStr[7];
+					        m_loopbuffer[4] = DateTimeStr[8];
+					        m_loopbuffer[5] = DateTimeStr[9];
+					        m_loopbuffer[6] = DateTimeStr[10];
+					        m_loopbuffer[7] = DateTimeStr[11];
+					        m_loopbuffer[8] = 0x0A;
+					        sendreply = true;
+				        }
+			        }		            
 #if SIM_MASTER_MODE
 			        
 			        if (m_loopbuffer[1] == 0xCB)
@@ -480,9 +540,17 @@ namespace SafeEngineering
 	        uint8_t m_loopbuffer[SERIAL_BUFFER_LENGTH + 1];
 	        uint8_t m_loopbufferLen;
 	        
+	        //State Variable to Periodically Update the QRFL LCD Display
+	        int lcd_update_cntr = 0;
+	        
+	        int date_set = 2;	//Set Date Twice on Startup
+	        int time_set = 2;	//Set Time Twice on Startup
+	        
 	        //Temporary Test Counter variable
 	        int tmp_cntr = 1;
 	        int fault_cntr = 1;
+	        
+	        
                             
         };  // Serial class
         

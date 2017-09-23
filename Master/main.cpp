@@ -135,6 +135,7 @@ int main(int argc, char **argv)
 {
     try
     {
+	    	    	       		
         SafeEngineering::Utils::Settings appSettings;
         if(SafeEngineering::Utils::LoadSettings(appSettings) == false)
         {
@@ -171,7 +172,7 @@ int main(int argc, char **argv)
 		    std::cout << "SubMaster IP:" << appSettings.Units[8].IPAddress << std::endl;
 		    std::cout << "My IP:" << appSettings.CurrentUnit.IPAddress << std::endl;
 	        	    
-        // First, make a connection to submaster
+			// First, make a connection to submaster
 		    for (int i = 0; i < (int)appSettings.Units.size(); i++)
 		    {
 			    if (appSettings.Units[i].Type == SafeEngineering::Utils::UnitType::SUBMASTER)
@@ -182,7 +183,7 @@ int main(int argc, char **argv)
 			    }
 		    }
 
-		            // Second, make connections to slaves
+		    // Second, make connections to slaves
 		    for (int i = 0; i < (int)appSettings.Units.size(); i++)
 		    {			    
 			    if (appSettings.Units[i].Type == SafeEngineering::Utils::UnitType::SLAVE)
@@ -317,12 +318,10 @@ int main(int argc, char **argv)
 		    serial1.CloseSerial();
 		    return -1;  		    
 	    }
-				
-	    	   	    	    
+					    	   	    	    
         // Close UART connection
         serial1.CloseSerial();
-	     
-	    
+	     	    
 	    std::cout << "Finished";
     }
     catch(std::exception& e)

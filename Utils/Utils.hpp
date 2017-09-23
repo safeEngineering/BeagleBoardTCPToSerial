@@ -6,6 +6,10 @@
 #include <array>
 #include <chrono>
 
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <ifaddrs.h>
+
 #include <json.hpp>
 
 #define MAX_REMOTE_UNIT_NUMBERS            10
@@ -43,6 +47,115 @@ namespace SafeEngineering
             // Parameters of the remote boards in the system
             std::array<Unit, MAX_REMOTE_UNIT_NUMBERS> Units;
         } Settings;
+	    
+	    inline char* GetIPAddressLCDString(char* IPAddress, size_t sizeIPAddress)
+	    {
+	    
+		    struct ifaddrs *ifap, *ifa;
+		    struct sockaddr_in *sa;
+		    char *addr;
+		    
+		    //Initialise to All Zeros
+		    if (sizeIPAddress > 0)
+		    {			    		    
+				for (int i = 0; i < (sizeIPAddress - 1); i++)
+				{
+					IPAddress[i] = 0x30;
+				}
+				IPAddress[sizeIPAddress - 1] = 0x00;
+			}	    
+		    
+		    try
+		    {		    
+			    getifaddrs(&ifap);
+			    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+				    if (ifa->ifa_addr->sa_family == AF_INET) {
+					    sa = (struct sockaddr_in *) ifa->ifa_addr;
+					    addr = inet_ntoa(sa->sin_addr);
+					    if (strncmp(ifa->ifa_name, "eth0", 4) == 0)
+					    {
+						    unsigned long ipA = (unsigned long) sa->sin_addr.s_addr;
+						    unsigned char ipaddr[4];
+					    
+						    ipaddr[0] = (unsigned char) ipA % 256;
+						    ipA >>= 8;
+						    ipaddr[1] = (unsigned char) ipA % 256;
+						    ipA >>= 8;
+						    ipaddr[2] = (unsigned char) ipA % 256;
+						    ipA >>= 8;
+						    ipaddr[3] = (unsigned char) ipA % 256;
+						    //printf("Interface: %s\tAddress: %s : \n", ifa->ifa_name, addr);    
+						    //printf("IP %ul {%03d.%03d.%03d.%03d} \n", ipA, ipaddr[0], ipaddr[1], ipaddr[2], ipaddr[3]);    
+						
+						    if (sizeIPAddress > 8)
+						    {						    					    
+							    IPAddress[0] = ((ipaddr[0] & 0xF0) >> 4) + 0x30;
+							    IPAddress[1] = (ipaddr[0] & 0x0F) + 0x30;
+							    IPAddress[2] = ((ipaddr[1] & 0xF0) >> 4) + 0x30;
+							    IPAddress[3] = (ipaddr[1] & 0x0F) + 0x30;
+							    IPAddress[4] = ((ipaddr[2] & 0xF0) >> 4) + 0x30;
+							    IPAddress[5] = (ipaddr[2] & 0x0F) + 0x30;
+							    IPAddress[6] = ((ipaddr[3] & 0xF0) >> 4) + 0x30;
+							    IPAddress[7] = (ipaddr[3] & 0x0F) + 0x30;
+							    IPAddress[8] = 0x00;
+					    
+								//printf("LCD IP %s \n", IPAddress);    					    
+						    }
+					    }				    
+				    }
+			    }
+
+			    freeifaddrs(ifap);
+		    }
+		    catch (const std::exception& ex)
+		    {
+			    std::cerr << "GetIPAddressLCDString stopped with an exception: " << ex.what();		    
+		    }
+		    catch (...)
+		    {
+			    std::cerr << "GetIPAddressLCDString stopped with unexpected exception";		    
+		    }
+		    
+		    return IPAddress;
+	    }
+	    
+	    inline char* GetDateTimeLCDString(char* DateTimeStr, size_t sizeDateTime, const std::chrono::system_clock::time_point& tp)
+	    {
+		    //Initialise to All Zeros
+		    if (sizeDateTime > 0)
+		    {			    		    
+			    for (int i = 0; i < (sizeDateTime - 1); i++)
+			    {
+				    DateTimeStr[i] = 0x30;
+			    }
+			    DateTimeStr[sizeDateTime - 1] = 0x00;
+		    }	    
+		    
+		    time_t t = std::chrono::system_clock::to_time_t(tp);
+		    tm* ptm = std::localtime(&t);
+
+		    if (sizeDateTime > 12)
+		    {						    					    
+			    DateTimeStr[0] = (ptm->tm_hour / 10) + 0x30;
+			    DateTimeStr[1] = (ptm->tm_hour % 10) + 0x30;
+			    DateTimeStr[2] = (ptm->tm_min  / 10) + 0x30;
+			    DateTimeStr[3] = (ptm->tm_min % 10) + 0x30;
+			    DateTimeStr[4] = (ptm->tm_sec / 10) + 0x30;
+			    DateTimeStr[5] = (ptm->tm_sec % 10) + 0x30;
+			    DateTimeStr[6] = ((ptm->tm_year - 100) / 10) + 0x30;  //need to subtract 100 as tm_years is num years since 1900
+			    DateTimeStr[7] = ((ptm->tm_year - 100) % 10) + 0x30;  //need to subtract 100 as tm_years is num years since 1900	
+			    DateTimeStr[8] = ((ptm->tm_mon + 1) / 10) + 0x30;			//need to add 1 as tm_mon is 0 thru 11 and we need 1 thru 12
+			    DateTimeStr[9] = ((ptm->tm_mon + 1) % 10) + 0x30;
+			    DateTimeStr[10] = (ptm->tm_mday / 10) + 0x30;
+			    DateTimeStr[11] = (ptm->tm_mday % 10) + 0x30;			    
+			    DateTimeStr[12] = 0x00;
+				
+			    //printf("LCD DateTime %d %d %d   %d %d %d \n", ptm->tm_hour, ptm->tm_min, ptm->tm_sec, ptm->tm_year, ptm->tm_mon, ptm->tm_mday);
+				//printf("LCD DateTime %s \n", DateTimeStr);    					    
+		    }
+		    		    
+		    return DateTimeStr;
+	    }
 	    
 	    inline std::string timeString(const std::chrono::system_clock::time_point& tp)
 	    {
