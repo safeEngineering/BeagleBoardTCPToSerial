@@ -45,7 +45,7 @@ void TestLogService::start()
         throw std::logic_error("TestLogService already started");
     }
 
-    spdlog::get("test_log")->info() << timeString(std::chrono::system_clock::now()) << " Starting";
+	spdlog::get("dump_data_log")->info() << timeString(std::chrono::system_clock::now()) << " Starting";
 
     m_bIsRunning = true;
     startConnection();
@@ -53,7 +53,7 @@ void TestLogService::start()
 
 void TestLogService::stop()
 {
-    spdlog::get("test_log")->info() << timeString(std::chrono::system_clock::now()) << " Stopped";
+	spdlog::get("dump_data_log")->info() << timeString(std::chrono::system_clock::now()) << " Stopped";
     m_nReadID++;
     std::error_code errorCode;
     if (m_ptrSerialPort)
@@ -162,7 +162,7 @@ void TestLogService::handleRead(const std::error_code& errorCode, std::size_t nB
 
     if (errorCode)
     {
-        spdlog::get("log")->warn() << "TestLogService read error: " << errorCode.message();
+	    spdlog::get("status_log")->warn() << "TestLogService read error: " << errorCode.message();
         std::error_code ec;
         m_ptrSerialPort->close(ec);
         m_ptrSerialPort = nullptr;
@@ -287,7 +287,7 @@ void TestLogService::clearReadBuffer()
 void TestLogService::addLog(const std::string& str)
 {
 #warning also send to aurizon_node
-    spdlog::get("test_log")->info() << timeString(m_logTime) << "\r\n" << str;
+	spdlog::get("dump_data_log")->info() << timeString(m_logTime) << "\r\n" << str;
 }
 
 static std::string timeString(const std::chrono::system_clock::time_point& tp)

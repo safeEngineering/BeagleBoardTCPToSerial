@@ -16,8 +16,11 @@ namespace SafeEngineering
         class Acceptor
         {
         public:
-            Acceptor(asio::io_service& io_service, Serial& serial, const std::string& host, int port, std::string clientIP) : m_ios(io_service), m_serial(serial),
-                m_acceptor(io_service, asio::ip::tcp::endpoint(asio::ip::address::from_string(host), port)), m_clientIP(clientIP)
+	        Acceptor(asio::io_service& io_service, Serial& serial, const std::string& host, int port, std::string clientIP, bool consoleDebug)
+		        : m_ios(io_service)
+		        , m_serial(serial)
+		        , StdOutDebug(consoleDebug)
+		        , m_acceptor(io_service, asio::ip::tcp::endpoint(asio::ip::address::from_string(host), port)), m_clientIP(clientIP)
             {
                 m_totalConnections = 0;
                 m_currentConnection = nullptr;
@@ -27,11 +30,11 @@ namespace SafeEngineering
             {
                 try
                 {   
-                    SafeEngineering::Comm::Connection::pointer new_connection = boost::shared_ptr<Connection>(new Connection(m_ios, m_serial));
+	                SafeEngineering::Comm::Connection::pointer new_connection = boost::shared_ptr<Connection>(new Connection(m_ios, m_serial, StdOutDebug));
                     // Register Dropped event
                     new_connection->m_ConnectionDropped.connect(boost::bind(&Acceptor::HandleDroppedConnection, this, _1));
    
-                    std::cout << "Waiting for new client" << std::endl;
+                    if (StdOutDebug) std::cout  << "Waiting for new client" << std::endl;
                     m_acceptor.async_accept(new_connection->Socket(),
                         boost::bind(&Acceptor::HandleAccept, this, new_connection, asio::placeholders::error));
                 }
@@ -53,7 +56,7 @@ namespace SafeEngineering
                     remoteIP = new_connection->Socket().remote_endpoint().address().to_string();
                     if(remoteIP != m_clientIP)
                     {
-                        std::cout << "Close connection from invalid IP: " << remoteIP << std::endl;
+                        if (StdOutDebug) std::cout  << "Close connection from invalid IP: " << remoteIP << std::endl;
                         new_connection->m_ConnectionDropped.disconnect(boost::bind(&Acceptor::HandleDroppedConnection, this, _1));
                         new_connection->Close();
                     }
@@ -65,7 +68,7 @@ namespace SafeEngineering
                         ///////////////////////////////////////////////////////////////////////////////////////////////////////
                         if(m_totalConnections > 0 && m_currentConnection != nullptr)    // Request to close the previous connection
                         {
-                            std::cout << "Close the previous connection" << std::endl;
+                            if (StdOutDebug) std::cout  << "Close the previous connection" << std::endl;
                             m_currentConnection->Close();
                         }
                         
@@ -73,7 +76,7 @@ namespace SafeEngineering
                         m_totalConnections++;
                         // Assign this connection as currently active connection
                         m_currentConnection = new_connection;
-                        std::cout << "Accepted request from endpoint:" << new_connection->Socket().remote_endpoint() << std::endl;
+                        if (StdOutDebug) std::cout  << "Accepted request from endpoint:" << new_connection->Socket().remote_endpoint() << std::endl;
                         // Register Data event from Serial class
                         new_connection->RegisterSerialData();
                         // Initialize data reading for new connection
@@ -117,6 +120,8 @@ namespace SafeEngineering
             SafeEngineering::Comm::Connection::pointer m_currentConnection;
             // Valid IP
             std::string m_clientIP;
+	        
+	        bool StdOutDebug = false;
             
         };  // Acceptor class
         

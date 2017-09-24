@@ -61,7 +61,7 @@ Controller::StopCode Controller::getStopCode()
 
 void Controller::startup()
 {
-    spdlog::get("log")->info() << "Startup";
+	spdlog::get("status_log")->info() << "Startup";
     m_ptrTestLogService->start();
 
 }

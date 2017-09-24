@@ -15,6 +15,8 @@
 #include "spdlog/spdlog.h"
 #include "DailyFileSink.hpp"
 
+#define VERSION_STR "V0.1"
+
 namespace spd = spdlog;
 
 const char PATH_SEP = '/';
@@ -102,22 +104,22 @@ void InitialiseLogFiles(std::string siteName, SafeEngineering::Utils::UnitType u
 		
 		if (unitType == SafeEngineering::Utils::UnitType::MASTER)	    
 		{
-			spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Starting E23 Status Log (MASTER)";
+			spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Starting E23 [" << VERSION_STR << "] Status Log(MASTER)";
 		}
 		else if (unitType == SafeEngineering::Utils::UnitType::SUBMASTER)	    
 		{
-			spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Starting E23 Status Log (SUBMASTER)";
+			spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Starting E23 [" << VERSION_STR << "] Status Log (SUBMASTER)";
 		}
 		else if (unitType == SafeEngineering::Utils::UnitType::SLAVE)	    
 		{
-			spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Starting E23 Status Log (SLAVE)";
+			spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Starting E23 [" << VERSION_STR << "] Status Log (SLAVE)";
 		}
 		else
 		{
-			spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Starting E23 Status Log (UNKNOWN TYPE ERROR)";
+			spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Starting E23 [" << VERSION_STR << "] Status Log (UNKNOWN TYPE ERROR)";
 		}
 		
-		datalog->info()  << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Starting E23 Data Log";
+		datalog->info()  << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Starting E23 [" << VERSION_STR << "] Data Log";
 
 		datalog->flush();
 		statusLog->flush();
@@ -135,7 +137,18 @@ int main(int argc, char **argv)
 {
     try
     {
-	    	    	       		
+	    std::cout << "START QRFL E23 COMMS " << VERSION_STR << std::endl;
+	    
+	    bool debugConsoleOutput = false;
+	    
+	    for (int i = 1; i < argc; i++)
+	    {
+		    if (strcmp(argv[i], "-o") == 0)
+		    {
+			    debugConsoleOutput = true;
+		    }		    
+	    }
+	    
         SafeEngineering::Utils::Settings appSettings;
         if(SafeEngineering::Utils::LoadSettings(appSettings) == false)
         {
@@ -158,9 +171,9 @@ int main(int argc, char **argv)
         }
         
         asio::io_service ios;
-        
+	    	            
         // Construct serial object
-        SafeEngineering::Comm::Serial serial1(ios);
+	    SafeEngineering::Comm::Serial serial1(ios, debugConsoleOutput);
         // Open UART connection
         serial1.OpenSerial();
         
@@ -178,7 +191,7 @@ int main(int argc, char **argv)
 			    if (appSettings.Units[i].Type == SafeEngineering::Utils::UnitType::SUBMASTER)
 			    {
 			        // Construct TCP/IP object
-				    SafeEngineering::Comm::Connection::pointer new_connection = boost::shared_ptr<SafeEngineering::Comm::Connection>(new SafeEngineering::Comm::Connection(ios, serial1));                
+				    SafeEngineering::Comm::Connection::pointer new_connection = boost::shared_ptr<SafeEngineering::Comm::Connection>(new SafeEngineering::Comm::Connection(ios, serial1, debugConsoleOutput));                
 				    new_connection->Connect(appSettings.Units[i].IPAddress, 10001);
 			    }
 		    }
@@ -189,7 +202,7 @@ int main(int argc, char **argv)
 			    if (appSettings.Units[i].Type == SafeEngineering::Utils::UnitType::SLAVE)
 			    {
 			        // Construct TCP/IP object
-				    SafeEngineering::Comm::Connection::pointer new_connection = boost::shared_ptr<SafeEngineering::Comm::Connection>(new SafeEngineering::Comm::Connection(ios, serial1));
+				    SafeEngineering::Comm::Connection::pointer new_connection = boost::shared_ptr<SafeEngineering::Comm::Connection>(new SafeEngineering::Comm::Connection(ios, serial1, debugConsoleOutput));
 				    new_connection->Connect(appSettings.Units[i].IPAddress, 10001);
 				    //break;  // Now, we connect to one-only-one slave module
 			    }
@@ -230,7 +243,7 @@ int main(int argc, char **argv)
 		    std::cout << "My IP:" << appSettings.CurrentUnit.IPAddress << std::endl;
 	    		    
 		    // First, listen to connections from master
-		    SafeEngineering::Comm::Acceptor acceptor(ios, serial1, appSettings.CurrentUnit.IPAddress, 10001, appSettings.Units[0].IPAddress);
+		    SafeEngineering::Comm::Acceptor acceptor(ios, serial1, appSettings.CurrentUnit.IPAddress, 10001, appSettings.Units[0].IPAddress, debugConsoleOutput);
 		    acceptor.AcceptConnections();
         
 		    // Second, make connections to slaves
@@ -239,7 +252,7 @@ int main(int argc, char **argv)
 			    if (appSettings.Units[i].Type == SafeEngineering::Utils::UnitType::SLAVE)
 			    {
 			        // Construct TCP/IP object
-				    SafeEngineering::Comm::Connection::pointer new_connection = boost::shared_ptr<SafeEngineering::Comm::Connection>(new SafeEngineering::Comm::Connection(ios, serial1));
+				    SafeEngineering::Comm::Connection::pointer new_connection = boost::shared_ptr<SafeEngineering::Comm::Connection>(new SafeEngineering::Comm::Connection(ios, serial1, debugConsoleOutput));
 				    new_connection->Connect(appSettings.Units[i].IPAddress, 10002);                
 				    //break;  // Now, we connect to one-only-one slave module
 			    }
@@ -279,11 +292,11 @@ int main(int argc, char **argv)
 		    std::cout << "My IP:" << appSettings.CurrentUnit.IPAddress << std::endl;
 	    
 			// Listen to connections from Master
-		    SafeEngineering::Comm::Acceptor acceptor1(ios, serial1, appSettings.CurrentUnit.IPAddress, 10001, appSettings.Units[0].IPAddress);
+		    SafeEngineering::Comm::Acceptor acceptor1(ios, serial1, appSettings.CurrentUnit.IPAddress, 10001, appSettings.Units[0].IPAddress, debugConsoleOutput);
 		    acceptor1.AcceptConnections();
         		    
 			// Listen to connections from Submaster
-		    SafeEngineering::Comm::Acceptor acceptor2(ios, serial1, appSettings.CurrentUnit.IPAddress, 10002, appSettings.Units[8].IPAddress);  //AE [8] was [9]
+		    SafeEngineering::Comm::Acceptor acceptor2(ios, serial1, appSettings.CurrentUnit.IPAddress, 10002, appSettings.Units[8].IPAddress, debugConsoleOutput);  //[8] is SubMaster
 		    acceptor2.AcceptConnections();
 		    
 		    InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);
@@ -323,6 +336,8 @@ int main(int argc, char **argv)
         serial1.CloseSerial();
 	     	    
 	    std::cout << "Finished";
+	    
+	    sleep(2);
     }
     catch(std::exception& e)
     {

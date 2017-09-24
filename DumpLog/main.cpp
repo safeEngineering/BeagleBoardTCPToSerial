@@ -15,6 +15,8 @@
 #include <iostream>
 #include <memory>
 
+#define VERSION_STR "V0.1"
+
 /************************************************************
  * main method
  *
@@ -24,6 +26,8 @@
  ************************************************************/
 int main(int argc, char *argv[])
 {
+	std::cout << "START QRFL DATA DUMP LOG " << VERSION_STR << std::endl;
+	
 	std::string strLogPath = "/home/debian/web-app/public/log/";
     if (aurizon::mkpath(strLogPath, 0744))
     {
@@ -66,19 +70,20 @@ int main(int argc, char *argv[])
         sinks.push_back(std::make_shared<spdlog::sinks::stderr_sink_st>());
     }
 	sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(strLogPath + "DebugStatusLog-" + appSettings.SiteName, "txt", 8 * 1024 * 1024, 3, false));
-    auto log = spdlog::create("log", begin(sinks), end(sinks));
+    auto log = spdlog::create("status_log", begin(sinks), end(sinks));
     log->set_pattern("[%d-%m-%Y %H:%M:%S.%e] [%l] %v");
     // FIXME: level should be err normally
-    log->set_level(spdlog::level::warn);
+	log->set_level(spdlog::level::info);
+	
 
     std::vector<spdlog::sink_ptr> test_sinks;
 	test_sinks.push_back(std::make_shared<aurizon::DailyFileSink_st>(strLogPath, "DebugDataLog-" + appSettings.SiteName, "txt", 40, false));
-    auto test_log = spdlog::create("test_log", begin(test_sinks), end(test_sinks));
+    auto test_log = spdlog::create("dump_data_log", begin(test_sinks), end(test_sinks));
     test_log->set_pattern("%v");
 
     while (true)
     {
-        log->error() << "Starting...";
+        log->info() << "Starting QRFL Data Dump Log [" << VERSION_STR << "]";
 
         asio::io_service ioService;
 
@@ -98,7 +103,7 @@ int main(int argc, char *argv[])
             }
             else
             {
-                log->error() << "Stopped";
+	            log->info() << "Stopped";
             }
         }
         catch (const std::exception& ex)

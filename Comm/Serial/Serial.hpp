@@ -31,7 +31,9 @@ namespace SafeEngineering
         class Serial
         {
         public:
-            Serial(asio::io_service& io) : m_serialPort(io)
+	        Serial(asio::io_service& io, bool consoleDebug)
+		        : m_serialPort(io) 
+		        , StdOutDebug(consoleDebug)
             {
             }
             
@@ -103,7 +105,7 @@ namespace SafeEngineering
                 m_writePackets.push_back(packet);
                 if(!write_in_progress)
                 {
-                    std::cout << "Sending bytes: " << Utils::ConvertToHex(pPacket, (int)len) << " to UART port" << std::endl;
+                    if (StdOutDebug) std::cout  << "Sending bytes: " << Utils::ConvertToHex(pPacket, (int)len) << " to UART port" << std::endl;
 	                
 	                //Log Outgoing Serial Data
 	                char character_data[SERIAL_PACKET_LENGTH];
@@ -123,7 +125,7 @@ namespace SafeEngineering
                 }
                 else
                 {
-                    std::cout << "Push the packet to the queue" << std::endl;
+                    if (StdOutDebug) std::cout  << "Push the packet to the queue" << std::endl;
                 }
                 
                 return true;
@@ -135,15 +137,15 @@ namespace SafeEngineering
                 // Clear content of buffer
                 m_serialPort.async_read_some(asio::buffer(m_buffer), boost::bind(&Serial::ReadHandler, 
                     this, asio::placeholders::error, asio::placeholders::bytes_transferred));
-                std::cout << "Started asynchonous UART read operation" << std::endl;
+                if (StdOutDebug) std::cout  << "Started asynchonous UART read operation" << std::endl;
             }
             
             void ReadHandler(const asio::error_code& err, std::size_t bytes)
             {
                 if(!err)
                 {
-                    std::cout << "Received " << bytes << " bytes from UART" << std::endl;
-                    std::cout << Utils::ConvertToHex(m_buffer, bytes) << std::endl;
+                    if (StdOutDebug) std::cout  << "Received " << bytes << " bytes from UART" << std::endl;
+                    if (StdOutDebug) std::cout  << Utils::ConvertToHex(m_buffer, bytes) << std::endl;
                     
                     // Parse serial data and construct new packet
                     for(int i = 0; i < (int)bytes; i++)
@@ -186,8 +188,8 @@ namespace SafeEngineering
                             else
                             {
                                 // Invalid packet
-                                std::cout << "Received invalid packet from external device" << std::endl;
-                                //std::cout << Utils::ConvertToHex(m_packet, m_packetLen) << std::endl;
+                                if (StdOutDebug) std::cout  << "Received invalid packet from external device" << std::endl;
+                                //if (StdOutDebug) std::cout  << Utils::ConvertToHex(m_packet, m_packetLen) << std::endl;
                             }
                             // Reset for new packet
                             memset(m_packet, 0L, SERIAL_PACKET_LENGTH + 1);
@@ -211,13 +213,13 @@ namespace SafeEngineering
             {
                 if(!err)
                 {
-                    std::cout << bytes <<  " bytes were sent successfully" << std::endl;
+                    if (StdOutDebug) std::cout  << bytes <<  " bytes were sent successfully" << std::endl;
                     
                     // Remote processed packet from queue
                     m_writePackets.pop_front();
                     if(!m_writePackets.empty())
                     {
-                        std::cout << "Sending bytes: " << Utils::ConvertToHex(m_writePackets.front().Data(), m_writePackets.front().Length()) << " to UART port" << std::endl;
+                        if (StdOutDebug) std::cout  << "Sending bytes: " << Utils::ConvertToHex(m_writePackets.front().Data(), m_writePackets.front().Length()) << " to UART port" << std::endl;
                         
                         // Send queued packet to serial port now
                         asio::async_write(m_serialPort, asio::buffer(m_writePackets.front().Data(), m_writePackets.front().Length()), 
@@ -361,7 +363,7 @@ namespace SafeEngineering
 			        {
 
 				        IPAddrPtr = SafeEngineering::Utils::GetIPAddressLCDString(IPAddress, sizeof(IPAddress));	    	    
-				        std::cout << "IP ADDRESS CALCULATION : " << IPAddress << std::endl;
+				        if (StdOutDebug) std::cout  << "IP ADDRESS CALCULATION : " << IPAddress << std::endl;
 			       			        
 				        if (m_loopbuffer[1] == 0xEC)  // IP Part A and B  192.168
 				        {
@@ -392,7 +394,7 @@ namespace SafeEngineering
 			        if ((m_loopbuffer[1] == 0xEE)  || (m_loopbuffer[1] == 0xEF))   // Date/Time Commands
 			        {
 				        DateTimePtr = SafeEngineering::Utils::GetDateTimeLCDString(DateTimeStr, sizeof(DateTimeStr), std::chrono::system_clock::now());	    	    
-				        std::cout << "DATE TIME CALCULATION : " << DateTimeStr << std::endl;
+				        if (StdOutDebug) std::cout  << "DATE TIME CALCULATION : " << DateTimeStr << std::endl;
 				        
 									       			        				        
 				        if (m_loopbuffer[1] == 0xEE) //Time HH MM SS,
@@ -514,7 +516,7 @@ namespace SafeEngineering
 		        if (sendreply)
 		        {		            
 					// Send data to UART port
-			        std::cout << "Forward packet to external UART device" << std::endl;
+			        if (StdOutDebug) std::cout  << "Forward packet to external UART device" << std::endl;
 			        SendPacket(m_loopbuffer, m_loopbufferLen);            
 		        }  
 		        		        
@@ -550,7 +552,8 @@ namespace SafeEngineering
 	        int tmp_cntr = 1;
 	        int fault_cntr = 1;
 	        
-	        
+	        bool StdOutDebug = false;
+	        	        
                             
         };  // Serial class
         

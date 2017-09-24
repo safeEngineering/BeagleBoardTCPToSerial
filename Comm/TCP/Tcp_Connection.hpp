@@ -18,6 +18,8 @@
 
 #define SOCKET_BUFFER_LENGTH            100
 
+#define SOCKET_CONNECT_RETRY_DELAY_SECS 5
+
 namespace SafeEngineering
 {
     namespace Comm
@@ -27,7 +29,11 @@ namespace SafeEngineering
         public:
             typedef boost::shared_ptr<Connection> pointer;
                         
-            Connection(asio::io_service& io_service, Serial& serial) : m_socket(io_service), m_delay(io_service), m_serial(serial)
+	        Connection(asio::io_service& io_service, Serial& serial, bool consoleDebug)
+		        : m_socket(io_service)
+		        , m_delay(io_service)
+		        , m_serial(serial)
+		        , StdOutDebug(consoleDebug)
             {
                 // The default is server connection
                 m_serverSide = true;
@@ -37,7 +43,7 @@ namespace SafeEngineering
             
             ~Connection()
             {
-                std::cout << "Destroy TCP/IP connection" << std::endl;
+                if (StdOutDebug) std::cout  << "Destroy TCP/IP connection" << std::endl;
             }
 
             // The event will signal whenever connection was dropped
@@ -64,7 +70,7 @@ namespace SafeEngineering
                 // Socket have already connected
                 m_connectedSocket = true;
                 // And then, we wait for TCP/IP data
-                std::cout << "Waiting for data from endpoint:" << m_remoteEndpoint << std::endl;                
+                if (StdOutDebug) std::cout  << "Waiting for data from endpoint:" << m_remoteEndpoint << std::endl;                
                 m_socket.async_read_some(asio::buffer(m_buffer, SOCKET_BUFFER_LENGTH),
                     boost::bind(&Connection::HandleRead, shared_from_this(),
                     asio::placeholders::error,
@@ -85,7 +91,7 @@ namespace SafeEngineering
                 RegisterSerialData();
                     
                 asio::ip::tcp::endpoint ep(asio::ip::address::from_string(serverIP), serverPort);
-                std::cout << "Trying to connect to " << ep << std::endl;
+                if (StdOutDebug) std::cout  << "Trying to connect to " << ep << std::endl;
                 m_socket.async_connect(ep, boost::bind(&Connection::HandleConnect, shared_from_this(), asio::placeholders::error));
             }
             
@@ -101,7 +107,7 @@ namespace SafeEngineering
             void Reconnect()
             {
                 asio::ip::tcp::endpoint ep(asio::ip::address::from_string(m_serverIP), m_serverPort);
-                std::cout << "Trying to reconnect to " << ep << std::endl;
+                if (StdOutDebug) std::cout  << "Trying to reconnect to " << ep << std::endl;
 	            
 	            spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << "Trying to reconnect to " << ep;
 
@@ -112,8 +118,8 @@ namespace SafeEngineering
             {
                 if(!err)
                 {
-                    std::cout << "Received " << bytes_received << " bytes from remote endpoint:" << m_remoteEndpoint << std::endl;
-                    std::cout << Utils::ConvertToHex(m_buffer, bytes_received) << std::endl;
+                    if (StdOutDebug) std::cout  << "Received " << bytes_received << " bytes from remote endpoint:" << m_remoteEndpoint << std::endl;
+                    if (StdOutDebug) std::cout  << Utils::ConvertToHex(m_buffer, bytes_received) << std::endl;
 	                
 	                /***************************************************/                    
 	                //AE Modify Data for return echo for testing.
@@ -124,7 +130,7 @@ namespace SafeEngineering
                     /***************************************************/                    
                     
                     // Send data to UART port
-                    std::cout << "Forward packet to external UART device" << std::endl;
+                    if (StdOutDebug) std::cout  << "Forward packet to external UART device" << std::endl;
                     m_serial.SendPacket(m_buffer, bytes_received);
                     
                     // Read next data
@@ -144,7 +150,7 @@ namespace SafeEngineering
             {
                 if(!err)
                 {
-                    std::cout << "Sent " << bytes_sent << " bytes to endpoint:" << m_remoteEndpoint << std::endl;
+                    if (StdOutDebug) std::cout  << "Sent " << bytes_sent << " bytes to endpoint:" << m_remoteEndpoint << std::endl;
                 }
                 else
                 {
@@ -166,8 +172,8 @@ namespace SafeEngineering
 					
 	                spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << "Failed: '" << err.message() << "' in HandleConnect";
 
-	                // Delay asynchronously 1s after that we will try reconnecing to the server
-                    m_delay.expires_from_now(boost::posix_time::seconds(1));
+	                // Delay asynchronously 5s after that we will try reconnecing to the server
+	                m_delay.expires_from_now(boost::posix_time::seconds(SOCKET_CONNECT_RETRY_DELAY_SECS));
                     m_delay.async_wait(boost::bind(&Connection::Reconnect, shared_from_this()));
                 }
             }
@@ -176,11 +182,11 @@ namespace SafeEngineering
             {
                 if(m_connectedSocket == false)
                 {
-                    std::cerr << "TCP/IP connection have not established yet" << std::endl;
+	                if (StdOutDebug) std::cout << "TCP/IP connection have not established yet" << std::endl;
                     return;
                 }
                     
-                std::cout << "Forward packet to remote device throughout TCP/IP" << std::endl;
+                if (StdOutDebug) std::cout  << "Forward packet to remote device throughout TCP/IP" << std::endl;
                 // Copy data from serial's buffer to local tx buffer
                 memcpy(m_txbuffer, pPacket, len);
                 m_txbufferLen = len;
@@ -238,6 +244,8 @@ namespace SafeEngineering
             bool m_serverSide;
             // The flag specifies whether socket is actually connected or not
             bool m_connectedSocket;
+	        
+	        bool StdOutDebug = false;
                         
         };  // Connection class
     }   
