@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
     {
         sinks.push_back(std::make_shared<spdlog::sinks::stderr_sink_st>());
     }
-	sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(strLogPath + "DebugStatusLog-" + appSettings.SiteName, "txt", 8 * 1024 * 1024, 3, false));
+	sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(strLogPath + "DebugStatusLog-" + appSettings.SiteName, "txt", 32 * 1024, 3, false));
     auto log = spdlog::create("status_log", begin(sinks), end(sinks));
     log->set_pattern("[%d-%m-%Y %H:%M:%S.%e] [%l] %v");
     // FIXME: level should be err normally
