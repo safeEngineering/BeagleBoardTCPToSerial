@@ -18,6 +18,8 @@
 #include "spdlog/spdlog.h"
 #include "DailyFileSink.hpp"
 
+#define VERSION_STR "V0.1"
+
 namespace spd = spdlog;
 
 const char PATH_SEP = '/';
@@ -137,20 +139,17 @@ int main(int argc, char **argv)
 {
     try
     {
-	    struct ifaddrs *ifap, *ifa;
-	    struct sockaddr_in *sa;
-	    char *addr;
-
-	    getifaddrs(&ifap);
-	    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
-		    if (ifa->ifa_addr->sa_family == AF_INET) {
-			    sa = (struct sockaddr_in *) ifa->ifa_addr;
-			    addr = inet_ntoa(sa->sin_addr);
-			    printf("Interface: %s\tAddress: %s\n", ifa->ifa_name, addr);
-		    }
+	    std::cout << "START QRFL E23 COMMS " << VERSION_STR << std::endl;
+	    
+	    bool debugConsoleOutput = false;
+	    
+	    for (int i = 1; i < argc; i++)
+	    {
+		    if (strcmp(argv[i], "-o") == 0)
+		    {
+			    debugConsoleOutput = true;
+		    }		    
 	    }
-
-	    freeifaddrs(ifap);
 	    
         // Load settings from json/text file
         SafeEngineering::Utils::Settings appSettings;
@@ -174,18 +173,15 @@ int main(int argc, char **argv)
             return -1;  
         }
 	    
-	    
-	   
-	    
         
         asio::io_service ios;
         
-        SafeEngineering::Comm::Serial serial1(ios);
+	    SafeEngineering::Comm::Serial serial1(ios, debugConsoleOutput);
         // Open UART connection
         serial1.OpenSerial();
         
         // Listen to connections from Master
-        SafeEngineering::Comm::Acceptor acceptor1(ios, serial1, appSettings.CurrentUnit.IPAddress, 10001, appSettings.Units[0].IPAddress);
+	    SafeEngineering::Comm::Acceptor acceptor1(ios, serial1, appSettings.CurrentUnit.IPAddress, 10001, appSettings.Units[0].IPAddress, debugConsoleOutput);
         acceptor1.AcceptConnections();
         
 	    std::cout << "Master IP:" << appSettings.Units[0].IPAddress << std::endl;
@@ -193,7 +189,7 @@ int main(int argc, char **argv)
 	    std::cout << "My IP:" << appSettings.CurrentUnit.IPAddress << std::endl;
 	    
         // Listen to connections from Submaster
-        SafeEngineering::Comm::Acceptor acceptor2(ios, serial1, appSettings.CurrentUnit.IPAddress, 10002, appSettings.Units[8].IPAddress);  //AE [8] was [9]
+	    SafeEngineering::Comm::Acceptor acceptor2(ios, serial1, appSettings.CurrentUnit.IPAddress, 10002, appSettings.Units[8].IPAddress, debugConsoleOutput);  //AE [8] was [9]
         acceptor2.AcceptConnections();
 	    
 	    InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);

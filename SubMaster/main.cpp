@@ -14,6 +14,8 @@
 #include "spdlog/spdlog.h"
 #include "DailyFileSink.hpp"
 
+#define VERSION_STR "V0.1"
+
 namespace spd = spdlog;
 
 const char PATH_SEP = '/';
@@ -133,6 +135,19 @@ void InitialiseLogFiles(std::string siteName, SafeEngineering::Utils::UnitType u
 
 int main(int argc, char **argv)
 {
+	
+	std::cout << "START QRFL E23 COMMS " << VERSION_STR << std::endl;
+	    
+	bool debugConsoleOutput = false;
+	    
+	for (int i = 1; i < argc; i++)
+	{
+		if (strcmp(argv[i], "-o") == 0)
+		{
+			debugConsoleOutput = true;
+		}		    
+	}
+	
     try
     {
         // Load settings from json/text file
@@ -159,12 +174,12 @@ int main(int argc, char **argv)
         
         asio::io_service ios;
         
-        SafeEngineering::Comm::Serial serial1(ios);
+	    SafeEngineering::Comm::Serial serial1(ios, debugConsoleOutput);
         // Open UART connection
         serial1.OpenSerial();
         
         // First, listen to connections from master
-        SafeEngineering::Comm::Acceptor acceptor(ios, serial1, appSettings.CurrentUnit.IPAddress, 10001, appSettings.Units[0].IPAddress);
+	    SafeEngineering::Comm::Acceptor acceptor(ios, serial1, appSettings.CurrentUnit.IPAddress, 10001, appSettings.Units[0].IPAddress, debugConsoleOutput);
         acceptor.AcceptConnections();
         
         // Second, make connections to slaves
@@ -173,7 +188,7 @@ int main(int argc, char **argv)
             if(appSettings.Units[i].Type == SafeEngineering::Utils::UnitType::SLAVE)
             {
                 // Construct TCP/IP object
-                SafeEngineering::Comm::Connection::pointer new_connection = boost::shared_ptr<SafeEngineering::Comm::Connection>(new SafeEngineering::Comm::Connection(ios, serial1));
+	            SafeEngineering::Comm::Connection::pointer new_connection = boost::shared_ptr<SafeEngineering::Comm::Connection>(new SafeEngineering::Comm::Connection(ios, serial1, debugConsoleOutput));
                 new_connection->Connect(appSettings.Units[i].IPAddress, 10002);                
                 //break;  // Now, we connect to one-only-one slave module
             }
