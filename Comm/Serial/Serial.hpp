@@ -24,6 +24,8 @@
 
 //#define SIM_MASTER_MODE 1
 
+//#define SIM_SLAVE_MODE 1
+
 namespace SafeEngineering
 {
     namespace Comm
@@ -89,15 +91,67 @@ namespace SafeEngineering
             {
                 m_serialPort.close();
             }
-            
-            bool SendPacket(const uint8_t* pPacket, size_t len)
+
+#ifdef SIM_SLAVE_MODE	        
+            bool SendPacket(uint8_t* pPacket, size_t len)
+#else
+	        bool SendPacket(const uint8_t* pPacket, size_t len)
+#endif	
             {
                 if(len != SERIAL_PACKET_LENGTH)
                     return false;
                 if(m_serialPort.is_open() == false)
                     return false;
-                
-                // Construct new packet for the queue
+
+#ifdef SIM_SLAVE_MODE
+				   	            
+	            if (pPacket[1] == 0xF1)
+	            {
+		            pPacket[0] = 0x02;
+		            pPacket[1] = 0x6F;
+		            pPacket[2] = 0x51;
+		            pPacket[3] = 0x36;
+		            pPacket[4] = 0x30;
+		            pPacket[5] = 0x30;
+		            pPacket[6] = 0x3A;
+		            pPacket[7] = 0x3D;
+		            pPacket[8] = 0x00;
+		            pPacket[9] = 0x03;
+		            
+		            std::cout  << "Sending bytes: " << Utils::ConvertToHex(pPacket, (int)len) << " to UART port" << std::endl;
+	            }
+	            else if (pPacket[1] == 0xC1)
+	            {		            
+		            pPacket[0] = 0x02;
+		            pPacket[1] = 0x6F;
+		            pPacket[2] = 0x41;
+		            pPacket[3] = 0x31;
+		            pPacket[4] = 0x34;
+		            pPacket[5] = 0x38;
+		            pPacket[6] = 0x3C;
+		            pPacket[7] = 0x00;
+		            pPacket[8] = 0x00;
+		            pPacket[9] = 0x03;
+		            
+		            std::cout  << "Sending bytes: " << Utils::ConvertToHex(pPacket, (int)len) << " to UART port" << std::endl;
+	            }
+	            else
+	            {		            
+		            pPacket[0] = 0x00;
+		            pPacket[1] = 0x00;
+		            pPacket[2] = 0x00;
+		            pPacket[3] = 0x00;
+		            pPacket[4] = 0x00;
+		            pPacket[5] = 0x00;
+		            pPacket[6] = 0x00;
+		            pPacket[7] = 0x00;
+		            pPacket[8] = 0x00;
+		            pPacket[9] = 0x00;
+		            
+		        }
+	            
+#endif	            
+	            // Construct new packet for the queue
                 SerialPacket packet(pPacket, len);
                 
                 // Keep in mind. Calling to empty() will been ensured as atomic operation!!!

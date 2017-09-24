@@ -181,7 +181,7 @@ int main(int argc, char **argv)
 	    {
 		    std::cout << "STARTING AS MASTER!!!" << std::endl;
 		    
-		    std::cout << "Master IP:" << appSettings.Units[0].IPAddress << std::endl;
+		    std::cout << "Master IP:" << appSettings.CurrentUnit.IPAddress << std::endl;
 		    std::cout << "SubMaster IP:" << appSettings.Units[8].IPAddress << std::endl;
 		    std::cout << "My IP:" << appSettings.CurrentUnit.IPAddress << std::endl;
 	        	    
@@ -239,7 +239,7 @@ int main(int argc, char **argv)
 		    std::cout << "STARTING AS SUBMASTER!!!" << std::endl;
 		    
 		    std::cout << "Master IP:" << appSettings.Units[0].IPAddress << std::endl;
-		    std::cout << "SubMaster IP:" << appSettings.Units[8].IPAddress << std::endl;
+		    std::cout << "SubMaster IP:" << appSettings.CurrentUnit.IPAddress << std::endl;
 		    std::cout << "My IP:" << appSettings.CurrentUnit.IPAddress << std::endl;
 	    		    
 		    // First, listen to connections from master
