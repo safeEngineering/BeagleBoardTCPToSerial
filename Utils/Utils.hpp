@@ -53,12 +53,12 @@ namespace SafeEngineering
 	    
 		    struct ifaddrs *ifap, *ifa;
 		    struct sockaddr_in *sa;
-		    char *addr;
+            //char *addr;
 		    
 		    //Initialise to All Zeros
 		    if (sizeIPAddress > 0)
 		    {			    		    
-				for (int i = 0; i < (sizeIPAddress - 1); i++)
+				for (int i = 0; i < ((int)sizeIPAddress - 1); i++)
 				{
 					IPAddress[i] = 0x30;
 				}
@@ -71,7 +71,7 @@ namespace SafeEngineering
 			    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
 				    if (ifa->ifa_addr->sa_family == AF_INET) {
 					    sa = (struct sockaddr_in *) ifa->ifa_addr;
-					    addr = inet_ntoa(sa->sin_addr);
+					    //addr = inet_ntoa(sa->sin_addr);
 					    if (strncmp(ifa->ifa_name, "eth0", 4) == 0)
 					    {
 						    unsigned long ipA = (unsigned long) sa->sin_addr.s_addr;
@@ -124,7 +124,7 @@ namespace SafeEngineering
 		    //Initialise to All Zeros
 		    if (sizeDateTime > 0)
 		    {			    		    
-			    for (int i = 0; i < (sizeDateTime - 1); i++)
+			    for (int i = 0; i < ((int)sizeDateTime - 1); i++)
 			    {
 				    DateTimeStr[i] = 0x30;
 			    }
@@ -262,8 +262,6 @@ namespace SafeEngineering
 		            settings.SiteName = s;
 		            
 		            std::cout << "SiteName: " << settings.SiteName << std::endl;
-		            
-		            
 	            }
 	            
                 auto ver = settingsjson.find("version");

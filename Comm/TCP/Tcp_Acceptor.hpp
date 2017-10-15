@@ -19,8 +19,8 @@ namespace SafeEngineering
 	        Acceptor(asio::io_service& io_service, Serial& serial, const std::string& host, int port, std::string clientIP, bool consoleDebug)
 		        : m_ios(io_service)
 		        , m_serial(serial)
-		        , StdOutDebug(consoleDebug)
 		        , m_acceptor(io_service, asio::ip::tcp::endpoint(asio::ip::address::from_string(host), port)), m_clientIP(clientIP)
+                , StdOutDebug(consoleDebug)
             {
                 m_totalConnections = 0;
                 m_currentConnection = nullptr;

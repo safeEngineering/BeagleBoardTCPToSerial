@@ -110,6 +110,7 @@ namespace SafeEngineering
                 if (StdOutDebug) std::cout  << "Trying to reconnect to " << ep << std::endl;
 	            
 	            spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << "Trying to reconnect to " << ep;
+                //spdlog::get("E23StatusLog")->info("{} {} {}:{}", SafeEngineering::Utils::timeString(std::chrono::system_clock::now()), "Trying to reconnect to", m_serverIP, m_serverPort);
 
                 m_socket.async_connect(ep, boost::bind(&Connection::HandleConnect, shared_from_this(), asio::placeholders::error));
             }
@@ -171,6 +172,7 @@ namespace SafeEngineering
                     std::cerr << "Failed: '" << err.message() <<"' in HandleConnect" << std::endl;
 					
 	                spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << "Failed: '" << err.message() << "' in HandleConnect";
+                    //spdlog::get("E23StatusLog")->info("{} {} '{}' {}", SafeEngineering::Utils::timeString(std::chrono::system_clock::now()), "Failed:", err.message(), "in HandleConnect");
 
 	                // Delay asynchronously 5s after that we will try reconnecing to the server
 	                m_delay.expires_from_now(boost::posix_time::seconds(SOCKET_CONNECT_RETRY_DELAY_SECS));
@@ -213,6 +215,7 @@ namespace SafeEngineering
                 else
                 {	                
 	                spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << "Trying to reconnect to ";
+                    //spdlog::get("E23StatusLog")->info("{} {}", SafeEngineering::Utils::timeString(std::chrono::system_clock::now()), "Trying to reconnect to ");
 
                     // Delay asynchronously 1s after that we will try reconnecing to the server
                     m_delay.expires_from_now(boost::posix_time::seconds(1));

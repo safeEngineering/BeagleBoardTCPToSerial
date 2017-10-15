@@ -36,7 +36,10 @@ namespace SafeEngineering
 	        Serial(asio::io_service& io, bool consoleDebug)
 		        : m_serialPort(io) 
 		        , StdOutDebug(consoleDebug)
+                , m_signalSet(io)
             {
+                m_signalSet.add(SIGINT);
+                m_signalSet.add(SIGTERM);
             }
             
             ~Serial()
@@ -55,6 +58,8 @@ namespace SafeEngineering
                         // First. Close COM port because it was opened before
                         CloseSerial();
                     }
+                    
+                    m_signalSet.async_wait(std::bind(&Serial::HandleSignal, this, std::placeholders::_1, std::placeholders::_2));
                     
                     // Open the COM port
                     m_serialPort.open("/dev/ttyS1");  // Name of COM/UART port ("COMx" on Windows or "/dev/ttySx" on Linux)
@@ -163,7 +168,7 @@ namespace SafeEngineering
 	                
 	                //Log Outgoing Serial Data
 	                char character_data[SERIAL_PACKET_LENGTH];
-	                for (int ii = 0;ii < len;ii++)
+	                for (int ii = 0; ii < (int)len; ii++)
 	                {
 		                character_data[ii] = (char) pPacket[ii];
 	                }
@@ -172,6 +177,7 @@ namespace SafeEngineering
 	                std::string hexMessage = Utils::string_to_hex(message);
 					
 	                spdlog::get("E23DataLog")->info() << "OUT:" << hexMessage;
+                    //spdlog::get("E23DataLog")->info("OUT: {}", hexMessage);
                     
                     // Send this packet to serial port now
                     asio::async_write(m_serialPort, asio::buffer(m_writePackets.front().Data(), m_writePackets.front().Length()), 
@@ -231,6 +237,7 @@ namespace SafeEngineering
 	                            std::string hexMessage = Utils::string_to_hex(message);
 					
 	                            spdlog::get("E23DataLog")->info() << "IN :" << hexMessage;
+                                //spdlog::get("E23DataLog")->info("IN: {}", hexMessage);
 	                            
 	                            //Check if packet should be processed and handled locally and also if is a valid packet to be sent to end point.
 	                            if (!(ProcessLocalPackets(m_packet, m_packetLen)))
@@ -285,15 +292,37 @@ namespace SafeEngineering
                     std::cerr << "Failed: '" << err.message() << "' when writing data to external device" << std::endl;
                 }
             }
+            
+            void HandleSignal(const std::error_code err, int signalNnumber)
+            {
+                if(!err)
+                {
+                    //std::cout << "Received signal: " << std::to_string(signalNnumber) << std::endl;
+                    if(signalNnumber == SIGINT)
+                        spdlog::get("E23DataLog")->info() << "Received SIGINT signal. Prepare to stop the application";
+                    else if(signalNnumber == SIGTERM)
+                        spdlog::get("E23DataLog")->info() << "Received SIGTERM signal. Prepare to stop the application";
+                    else
+                    {
+                        spdlog::get("E23DataLog")->info() << "Received signal: " << std::to_string(signalNnumber) << ". Ignore it now";
+                        return;
+                    }
+                    
+                    // Close COM port
+                    CloseSerial();
+                    // Post message into Asio service to stop it
+                    m_serialPort.get_io_service().stop();
+                }
+            }
 	        
 	        bool ProcessLocalPackets(uint8_t* pPacket, uint8_t len)
 	        {
 		        
 		        int sendreply = false;
 		        char IPAddress[8 + 1];
-		        char *IPAddrPtr;
+		        //char *IPAddrPtr;
 		        char DateTimeStr[12 + 1];
-		        char *DateTimePtr;
+		        //char *DateTimePtr;
 		        
 		        memcpy(m_loopbuffer, pPacket, len);
 		        m_loopbufferLen = len;
@@ -415,8 +444,7 @@ namespace SafeEngineering
 			        
 			        if ((m_loopbuffer[1] == 0xEC)  || (m_loopbuffer[1] == 0xED))   // IP Commands
 			        {
-
-				        IPAddrPtr = SafeEngineering::Utils::GetIPAddressLCDString(IPAddress, sizeof(IPAddress));	    	    
+				        //IPAddrPtr = SafeEngineering::Utils::GetIPAddressLCDString(IPAddress, sizeof(IPAddress));	    	    
 				        if (StdOutDebug) std::cout  << "IP ADDRESS CALCULATION : " << IPAddress << std::endl;
 			       			        
 				        if (m_loopbuffer[1] == 0xEC)  // IP Part A and B  192.168
@@ -447,10 +475,9 @@ namespace SafeEngineering
 			        
 			        if ((m_loopbuffer[1] == 0xEE)  || (m_loopbuffer[1] == 0xEF))   // Date/Time Commands
 			        {
-				        DateTimePtr = SafeEngineering::Utils::GetDateTimeLCDString(DateTimeStr, sizeof(DateTimeStr), std::chrono::system_clock::now());	    	    
+				        //DateTimePtr = SafeEngineering::Utils::GetDateTimeLCDString(DateTimeStr, sizeof(DateTimeStr), std::chrono::system_clock::now());	    	    
 				        if (StdOutDebug) std::cout  << "DATE TIME CALCULATION : " << DateTimeStr << std::endl;
 				        
-									       			        				        
 				        if (m_loopbuffer[1] == 0xEE) //Time HH MM SS,
 				        {
 				        	m_loopbuffer[2] = DateTimeStr[0];
@@ -607,7 +634,9 @@ namespace SafeEngineering
 	        int fault_cntr = 1;
 	        
 	        bool StdOutDebug = false;
-	        	        
+	        	   
+            // Catch terminated events
+            asio::signal_set m_signalSet;     
                             
         };  // Serial class
         

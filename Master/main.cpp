@@ -81,6 +81,8 @@ void InitialiseLogFiles(std::string siteName, SafeEngineering::Utils::UnitType u
 	{
 		
 		std::string strLogPath = "/home/debian/web-app/public/log/";
+        //std::string strLogPath = "./log/";
+        
 		if (mkpath(strLogPath, 0744))
 		{
 			std::cerr << "Unable to create log path: " << strLogPath << std::endl;
@@ -170,6 +172,9 @@ int main(int argc, char **argv)
             return -1;  
         }
         
+        // Initialize logging system before other parts of system wwere started
+        InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);
+        
         asio::io_service ios;
 	    	            
         // Construct serial object
@@ -208,7 +213,7 @@ int main(int argc, char **argv)
 			    }
 		    }
 		    
-		    InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);
+		    //InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);
         	    	    
 			// Run the ASIO service
 		    try
@@ -258,7 +263,7 @@ int main(int argc, char **argv)
 			    }
 		    }
 		    
-		    InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);
+		    //InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);
         	    	    
 			// Run the ASIO service
 		    try
@@ -299,7 +304,7 @@ int main(int argc, char **argv)
 		    SafeEngineering::Comm::Acceptor acceptor2(ios, serial1, appSettings.CurrentUnit.IPAddress, 10002, appSettings.Units[8].IPAddress, debugConsoleOutput);  //[8] is SubMaster
 		    acceptor2.AcceptConnections();
 		    
-		    InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);
+		    //InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);
         	    	    
 			// Run the ASIO service
 		    try
