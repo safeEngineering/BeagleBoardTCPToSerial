@@ -19,5 +19,6 @@ set(
 )
 
 add_subdirectory(Master)
-add_subdirectory(SubMaster)
-add_subdirectory(Slave)
+#add_subdirectory(SubMaster)
+#add_subdirectory(Slave)
+#add_subdirectory(GPIO)

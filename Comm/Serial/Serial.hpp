@@ -4,6 +4,8 @@
 #include <iostream>
 #include <iomanip>
 #include <deque>
+#include <string>
+#include <cmath>
 
 #include <boost/signals2.hpp>
 #include <boost/bind.hpp>
@@ -15,10 +17,17 @@
 #define START_OF_PACKET                 0x02
 #define END_OF_PACKET                   0x03
 
+#define GPIO_PIN_READ_PERIOD            250         // ms
+#define DEBOUNCE_SAMPLES                4
+#define HIGH_SAMPLES_MASK               (pow(2, DEBOUNCE_SAMPLES) - 1)
+
+#define GPIO_PIN_NAME                   "P9_27"     // GPIO_115
+
+#include "../../easyBlack/src/memGPIO.hpp"
+
 #include "SerialPacket.hpp"
 #include "Utils.hpp"
 
-#include <string>
 #include "spdlog/spdlog.h"
 #include "DailyFileSink.hpp"
 
@@ -37,6 +46,7 @@ namespace SafeEngineering
 		        : m_serialPort(io) 
 		        , StdOutDebug(consoleDebug)
                 , m_signalSet(io)
+                , m_GPIOReadTimer(io)
             {
                 m_signalSet.add(SIGINT);
                 m_signalSet.add(SIGTERM);
@@ -59,6 +69,7 @@ namespace SafeEngineering
                         CloseSerial();
                     }
                     
+                    // Initialize the termination signals
                     m_signalSet.async_wait(std::bind(&Serial::HandleSignal, this, std::placeholders::_1, std::placeholders::_2));
                     
                     // Open the COM port
@@ -85,6 +96,9 @@ namespace SafeEngineering
                     
                     // Setup asynchonous read operation
                     StartAsyncRead();
+                    
+                    // Initialize GPIO_PIN_NAME pin as input pin
+                    InitializeGPIOPin();
                 }
                 catch(std::exception& e)
                 {
@@ -315,6 +329,76 @@ namespace SafeEngineering
                 }
             }
 	        
+            void InitializeGPIOPin()
+            {
+                // Get data of pin
+                m_LowPowerPin = m_gpioInstance.getPin(GPIO_PIN_NAME);
+                // Set pin mode.
+                m_gpioInstance.pinMode (m_LowPowerPin, m_gpioInstance.INPUT);
+                // Reset variables
+                m_levelShifter = 0x00;
+                m_levelCounter = 0;
+    
+                // Start timer to read GPIO pin periodically
+                m_GPIOReadTimer.expires_from_now(boost::posix_time::millisec(GPIO_PIN_READ_PERIOD));
+                m_GPIOReadTimer.async_wait(boost::bind(&Serial::ReadGPIOPin, this));
+            }
+            
+            void ReadGPIOPin()
+            {
+                unsigned char currentlevel;
+                
+                // Read the level of the pin.
+                currentlevel = m_gpioInstance.digitalRead (m_LowPowerPin);
+                if(currentlevel == m_gpioInstance.HIGH)
+                {
+                    m_levelShifter = (m_levelShifter << 1) + 1;
+                }
+                else
+                {
+                    m_levelShifter = (m_levelShifter << 1);
+                }
+                m_levelCounter++;
+                
+                if(m_levelCounter == DEBOUNCE_SAMPLES)
+                {
+                    if(m_levelShifter == 0x00)  // We have got DEBOUNCE_SAMPLES LOW samples continuously
+                    {
+                        if(m_prevState == m_gpioInstance.HIGH)  // We need to reset the application
+                        {
+                            spdlog::get("E23DataLog")->info() << "Received transition from HIGH to LOW on desire GPIO pin. Prepare to stop the application";
+                            // Delay 3s before to stop the application
+                            m_GPIOReadTimer.expires_from_now(boost::posix_time::seconds(3));
+                            m_GPIOReadTimer.wait();
+                            // Close COM port
+                            CloseSerial();
+                            // Post message into Asio service to stop it
+                            m_serialPort.get_io_service().stop();
+                            return;
+                        }
+                    }
+                    else if(m_levelShifter == HIGH_SAMPLES_MASK) // We have got DEBOUNCE_SAMPLES HIGH samples continuously
+                    {
+                        if(m_prevState == m_gpioInstance.LOW)
+                        {
+                            m_prevState = m_gpioInstance.HIGH;
+                        }
+                    }
+                    else    // We have noises and we don't change the state
+                    {
+                    	if (StdOutDebug) std::cout << "Get noises from GPIO pin: " << std::endl;
+                    }
+                    
+                    // Reset variables
+                    m_levelShifter = 0x00;
+                    m_levelCounter = 0;
+                }
+
+                // Re-start timer to read GPIO pin periodically
+                m_GPIOReadTimer.expires_from_now(boost::posix_time::millisec(GPIO_PIN_READ_PERIOD));
+                m_GPIOReadTimer.async_wait(boost::bind(&Serial::ReadGPIOPin, this));
+            }
+            
 	        bool ProcessLocalPackets(uint8_t* pPacket, uint8_t len)
 	        {
 		        
@@ -637,6 +721,21 @@ namespace SafeEngineering
 	        	   
             // Catch terminated events
             asio::signal_set m_signalSet;     
+            
+            // Timer used to read pin GPIO
+            asio::deadline_timer m_GPIOReadTimer;
+            
+            // Instance of easyBlack
+            easyBlack::memGPIO m_gpioInstance;
+            // Instance of GPIO pin
+            easyBlack::memGPIO::gpioPin m_LowPowerPin;
+            
+            // Initial state of pin
+            unsigned char m_prevState = m_gpioInstance.LOW;
+            
+            // Shift-register holds continuelly levels 
+            unsigned char m_levelShifter;
+            unsigned char m_levelCounter;
                             
         };  // Serial class
         
