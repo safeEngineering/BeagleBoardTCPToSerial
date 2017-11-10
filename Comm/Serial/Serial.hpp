@@ -21,9 +21,10 @@
 #define DEBOUNCE_SAMPLES                4
 #define HIGH_SAMPLES_MASK               (pow(2, DEBOUNCE_SAMPLES) - 1)
 
-#define GPIO_PIN_NAME                   "P9_27"     // GPIO_115
+#define HEADER                          P9
+#define PIN                             27
 
-#include "../../easyBlack/src/memGPIO.hpp"
+#include "bbb.h"
 
 #include "SerialPacket.hpp"
 #include "Utils.hpp"
@@ -331,10 +332,9 @@ namespace SafeEngineering
 	        
             void InitializeGPIOPin()
             {
-                // Get data of pin
-                m_LowPowerPin = m_gpioInstance.getPin(GPIO_PIN_NAME);
-                // Set pin mode.
-                m_gpioInstance.pinMode (m_LowPowerPin, m_gpioInstance.INPUT);
+                // Set PIN as digital input
+                digital_direction(HEADER, PIN, IN);
+                
                 // Reset variables
                 m_levelShifter = 0x00;
                 m_levelCounter = 0;
@@ -349,8 +349,9 @@ namespace SafeEngineering
                 unsigned char currentlevel;
                 
                 // Read the level of the pin.
-                currentlevel = m_gpioInstance.digitalRead (m_LowPowerPin);
-                if(currentlevel == m_gpioInstance.HIGH)
+                currentlevel = digital_input(HEADER, PIN);
+                
+                if(currentlevel == 1)
                 {
                     m_levelShifter = (m_levelShifter << 1) + 1;
                 }
@@ -364,7 +365,7 @@ namespace SafeEngineering
                 {
                     if(m_levelShifter == 0x00)  // We have got DEBOUNCE_SAMPLES LOW samples continuously
                     {
-                        if(m_prevState == m_gpioInstance.HIGH)  // We need to reset the application
+                        if(m_prevState == 1)  // We need to reset the application
                         {
                             spdlog::get("E23DataLog")->info() << "Received transition from HIGH to LOW on desire GPIO pin. Prepare to stop the application";
                             // Delay 3s before to stop the application
@@ -379,9 +380,9 @@ namespace SafeEngineering
                     }
                     else if(m_levelShifter == HIGH_SAMPLES_MASK) // We have got DEBOUNCE_SAMPLES HIGH samples continuously
                     {
-                        if(m_prevState == m_gpioInstance.LOW)
+                        if(m_prevState == 0)
                         {
-                            m_prevState = m_gpioInstance.HIGH;
+                            m_prevState = 1;
                         }
                     }
                     else    // We have noises and we don't change the state
@@ -724,14 +725,8 @@ namespace SafeEngineering
             
             // Timer used to read pin GPIO
             asio::deadline_timer m_GPIOReadTimer;
-            
-            // Instance of easyBlack
-            easyBlack::memGPIO m_gpioInstance;
-            // Instance of GPIO pin
-            easyBlack::memGPIO::gpioPin m_LowPowerPin;
-            
             // Initial state of pin
-            unsigned char m_prevState = m_gpioInstance.LOW;
+            unsigned char m_prevState = 0;
             
             // Shift-register holds continuelly levels 
             unsigned char m_levelShifter;
