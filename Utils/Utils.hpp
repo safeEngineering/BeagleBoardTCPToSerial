@@ -53,7 +53,7 @@ namespace SafeEngineering
 	    
 		    struct ifaddrs *ifap, *ifa;
 		    struct sockaddr_in *sa;
-            //char *addr;
+            char *addr;
 		    
 		    //Initialise to All Zeros
 		    if (sizeIPAddress > 0)
@@ -71,7 +71,7 @@ namespace SafeEngineering
 			    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
 				    if (ifa->ifa_addr->sa_family == AF_INET) {
 					    sa = (struct sockaddr_in *) ifa->ifa_addr;
-					    //addr = inet_ntoa(sa->sin_addr);
+					    addr = inet_ntoa(sa->sin_addr);
 					    if (strncmp(ifa->ifa_name, "eth0", 4) == 0)
 					    {
 						    unsigned long ipA = (unsigned long) sa->sin_addr.s_addr;

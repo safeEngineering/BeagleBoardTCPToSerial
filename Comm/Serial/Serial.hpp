@@ -405,9 +405,9 @@ namespace SafeEngineering
 		        
 		        int sendreply = false;
 		        char IPAddress[8 + 1];
-		        //char *IPAddrPtr;
+		        char *IPAddrPtr;
 		        char DateTimeStr[12 + 1];
-		        //char *DateTimePtr;
+		        char *DateTimePtr;
 		        
 		        memcpy(m_loopbuffer, pPacket, len);
 		        m_loopbufferLen = len;
@@ -529,7 +529,7 @@ namespace SafeEngineering
 			        
 			        if ((m_loopbuffer[1] == 0xEC)  || (m_loopbuffer[1] == 0xED))   // IP Commands
 			        {
-				        //IPAddrPtr = SafeEngineering::Utils::GetIPAddressLCDString(IPAddress, sizeof(IPAddress));	    	    
+				        IPAddrPtr = SafeEngineering::Utils::GetIPAddressLCDString(IPAddress, sizeof(IPAddress));	    	    
 				        if (StdOutDebug) std::cout  << "IP ADDRESS CALCULATION : " << IPAddress << std::endl;
 			       			        
 				        if (m_loopbuffer[1] == 0xEC)  // IP Part A and B  192.168
@@ -560,7 +560,7 @@ namespace SafeEngineering
 			        
 			        if ((m_loopbuffer[1] == 0xEE)  || (m_loopbuffer[1] == 0xEF))   // Date/Time Commands
 			        {
-				        //DateTimePtr = SafeEngineering::Utils::GetDateTimeLCDString(DateTimeStr, sizeof(DateTimeStr), std::chrono::system_clock::now());	    	    
+				        DateTimePtr = SafeEngineering::Utils::GetDateTimeLCDString(DateTimeStr, sizeof(DateTimeStr), std::chrono::system_clock::now());	    	    
 				        if (StdOutDebug) std::cout  << "DATE TIME CALCULATION : " << DateTimeStr << std::endl;
 				        
 				        if (m_loopbuffer[1] == 0xEE) //Time HH MM SS,

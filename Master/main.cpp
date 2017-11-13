@@ -79,8 +79,8 @@ void InitialiseLogFiles(std::string siteName, SafeEngineering::Utils::UnitType u
 {
 	try
 	{
-		
-		std::string strLogPath = "/home/debian/web-app/public/log/";
+		std::string strLogPath = "/logs/web-app/public/log/";
+		//std::string strLogPath = "/home/debian/web-app/public/log/";
         //std::string strLogPath = "./log/";
         
 		if (mkpath(strLogPath, 0744))

@@ -28,8 +28,9 @@ int main(int argc, char *argv[])
 {
 	std::cout << "START QRFL DATA DUMP LOG " << VERSION_STR << std::endl;
 	
-	std::string strLogPath = "/home/debian/web-app/public/log/";
-    if (aurizon::mkpath(strLogPath, 0744))
+	std::string strLogPath = "/logs/web-app/public/log/";    
+	//std::string strLogPath = "/home/debian/web-app/public/log/";
+	if (aurizon::mkpath(strLogPath, 0744))
     {
         std::cerr << "Unable to create log path: " << strLogPath << std::endl;
         return 1;
