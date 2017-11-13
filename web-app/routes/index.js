@@ -19,7 +19,7 @@ router.get('/logs', function(req, res, next) {
    var logFiles = [];
    var subArray = null;
 			
-	fs.readdir('/home/debian/web-app/public/log', function(err,files) {
+	fs.readdir('/logs/web-app/public/log', function(err,files) {
 		if (err) {
 			res.render('error', { message: err });
 		} else {
