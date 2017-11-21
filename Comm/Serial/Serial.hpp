@@ -193,7 +193,9 @@ namespace SafeEngineering
 					
 	                spdlog::get("E23DataLog")->info() << "OUT:" << hexMessage;
                     //spdlog::get("E23DataLog")->info("OUT: {}", hexMessage);
-                    
+	                
+	                rx_packet_cntr++;
+	                    
                     // Send this packet to serial port now
                     asio::async_write(m_serialPort, asio::buffer(m_writePackets.front().Data(), m_writePackets.front().Length()), 
                         boost::bind(&Serial::HandleWrite, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
@@ -296,7 +298,7 @@ namespace SafeEngineering
                     if(!m_writePackets.empty())
                     {
                         if (StdOutDebug) std::cout  << "Sending bytes: " << Utils::ConvertToHex(m_writePackets.front().Data(), m_writePackets.front().Length()) << " to UART port" << std::endl;
-                        
+                        	                    
                         // Send queued packet to serial port now
                         asio::async_write(m_serialPort, asio::buffer(m_writePackets.front().Data(), m_writePackets.front().Length()), 
                             boost::bind(&Serial::HandleWrite, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
@@ -466,7 +468,7 @@ namespace SafeEngineering
 									}
 									break;							
 							default:
-									if ((tmp_cntr % 5) == 0)
+									if (rx_packet_cntr < 4)
 									{
 										m_loopbuffer[2] = 0x30;   // 0x30, 0x30 indictes offline
 										m_loopbuffer[3] = 0x30;				            
@@ -477,7 +479,7 @@ namespace SafeEngineering
 										m_loopbuffer[3] = 0x31;
 									}
 									m_loopbuffer[4] = 0x0D;
-									m_loopbuffer[5] = 0x0A;
+									m_loopbuffer[5] = 0x0A;									
 									sendreply = true;
 									lcd_update_cntr = 0;
 				        
@@ -486,9 +488,8 @@ namespace SafeEngineering
 			        
 			        if (m_loopbuffer[1] == 0xE5) 
 			        {
-				        tmp_cntr++;				//Temporary Toggle of ON line and Offline
-				        if ((tmp_cntr % 5) == 0)
-				        {
+						if (rx_packet_cntr < 4)
+						{
 					        m_loopbuffer[2] = 0x30;   // 0x30, 0x30 indictes offline
 					        m_loopbuffer[3] = 0x30;				            
 				        }
@@ -499,6 +500,7 @@ namespace SafeEngineering
 				        }
 				        m_loopbuffer[4] = 0x0D;
 				        m_loopbuffer[5] = 0x0A;
+				        rx_packet_cntr = 0;				        
 				        sendreply = true;
 			        } 
 			        
@@ -717,6 +719,7 @@ namespace SafeEngineering
 	        //Temporary Test Counter variable
 	        int tmp_cntr = 1;
 	        int fault_cntr = 1;
+	        int rx_packet_cntr = 0;
 	        
 	        bool StdOutDebug = false;
 	        	   

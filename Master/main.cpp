@@ -15,7 +15,7 @@
 #include "spdlog/spdlog.h"
 #include "DailyFileSink.hpp"
 
-#define VERSION_STR "V0.1"
+#define VERSION_STR "V0.2"
 
 namespace spd = spdlog;
 
