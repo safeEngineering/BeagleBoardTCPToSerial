@@ -44,6 +44,8 @@ namespace SafeEngineering
             // Parameters of current unit
 	        std::string SiteName;
 	        Unit CurrentUnit;
+            // Gateway IP address
+            std::string GatewayIPAddr;
             // Parameters of the remote boards in the system
             std::array<Unit, MAX_REMOTE_UNIT_NUMBERS> Units;
         } Settings;
@@ -276,6 +278,13 @@ namespace SafeEngineering
                 {
                     self_id_value = self_id->get<int>();
                     std::cout << "self_id: " << self_id_value << std::endl;                    
+                }
+                
+                auto gateway_ip = settingsjson.find("gateway_ipaddr");
+                if(gateway_ip != settingsjson.end())
+                {
+                    settings.GatewayIPAddr = gateway_ip->get<std::string>();
+                    std::cout << "gateway_ipaddr: " << settings.GatewayIPAddr << std::endl;
                 }
                 
                 auto units = settingsjson.at("units");

@@ -91,7 +91,6 @@ void InitialiseLogFiles(std::string siteName, SafeEngineering::Utils::UnitType u
 		
 		spdlog::set_async_mode(8192, spdlog::async_overflow_policy::block_retry, nullptr, std::chrono::milliseconds(5000));
 		
-		
 		std::vector<spdlog::sink_ptr> sinks;
 		sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(strLogPath + "E23CommsDataLog-" + siteName, "txt", 32 * 1024 , 3, false));
 		auto datalog = spdlog::create("E23DataLog", begin(sinks), end(sinks));
@@ -142,7 +141,7 @@ int main(int argc, char **argv)
 	    std::cout << "START QRFL E23 COMMS " << VERSION_STR << std::endl;
 	    
 	    bool debugConsoleOutput = false;
-	    
+        
 	    for (int i = 1; i < argc; i++)
 	    {
 		    if (strcmp(argv[i], "-o") == 0)
@@ -172,13 +171,13 @@ int main(int argc, char **argv)
             return -1;  
         }
         
-        // Initialize logging system before other parts of system wwere started
+        // Initialize logging system before other parts of system were started
         InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);
         
         asio::io_service ios;
 	    	            
         // Construct serial object
-	    SafeEngineering::Comm::Serial serial1(ios, debugConsoleOutput);
+	    SafeEngineering::Comm::Serial serial1(ios, debugConsoleOutput, appSettings.GatewayIPAddr);
         // Open UART connection
         serial1.OpenSerial();
         

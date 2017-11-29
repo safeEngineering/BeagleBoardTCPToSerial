@@ -4,6 +4,7 @@ include_directories(
     ../asio-1.10.6/include
     ../spdlog/include
     ../Comm/Log
+	../Comm/Ping
     ../Comm/Serial
     ../Comm/TCP
     ../Utils

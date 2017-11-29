@@ -1,11 +1,14 @@
 {
   "version": "1.0.0",
-  "self_id": 1,
+  "site_name": "RAGLAN FS",
+  "serial_number": "12345678",
+  "self_id": 0,
+  "gateway_ipaddr": "10.10.1.1",
   "units": [
     {
       "unit_type": "master",
       "unit_id": 0,
-      "unit_ipaddr": "192.168.236.201"
+      "unit_ipaddr": "10.10.1.165"
     },
     {
       "unit_type": "slave",
@@ -54,3 +57,4 @@
     }
   ]
 }
+
