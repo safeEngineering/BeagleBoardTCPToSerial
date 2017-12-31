@@ -436,7 +436,7 @@ namespace SafeEngineering
                 
                 // Reset numbers
                 m_SequenceNumber = 0;
-                m_PingActive = 0;
+                m_PingActive = 0;   //AE Removed as this value will be cleared in the online / offline detection serial command.
                 
                 // Send first ping command of session
                 SendPingCommand();
@@ -590,6 +590,7 @@ namespace SafeEngineering
 									break;							
 							default:
 									if (rx_packet_cntr < 4)
+									//if (m_PingActive < 1)									
 									{
 										m_loopbuffer[2] = 0x30;   // 0x30, 0x30 indictes offline
 										m_loopbuffer[3] = 0x30;				            
@@ -609,7 +610,8 @@ namespace SafeEngineering
 			        
 			        if (m_loopbuffer[1] == 0xE5) 
 			        {
-						if (rx_packet_cntr < 4)
+				        if (rx_packet_cntr < 4)    
+						//if (m_PingActive < 1)
 						{
 					        m_loopbuffer[2] = 0x30;   // 0x30, 0x30 indictes offline
 					        m_loopbuffer[3] = 0x30;				            
@@ -621,7 +623,8 @@ namespace SafeEngineering
 				        }
 				        m_loopbuffer[4] = 0x0D;
 				        m_loopbuffer[5] = 0x0A;
-				        rx_packet_cntr = 0;				        
+				        rx_packet_cntr = 0;
+				        //m_PingActive = 0;
 				        sendreply = true;
 			        } 
 			        
@@ -872,7 +875,7 @@ namespace SafeEngineering
             // Numbers of total ping commands
             unsigned char m_SequenceNumber;
             // Numbers of successful ping commands
-            unsigned char m_PingActive;
+	        unsigned char m_PingActive; // = 0;
                         
         };  // Serial class
         
