@@ -714,31 +714,34 @@ namespace SafeEngineering
 			        
 			        if ((m_loopbuffer[1] == 0xEE)  || (m_loopbuffer[1] == 0xEF))   // Date/Time Commands
 			        {
-				        DateTimePtr = SafeEngineering::Utils::GetDateTimeLCDString(DateTimeStr, sizeof(DateTimeStr), std::chrono::system_clock::now());	    	    
-				        if (StdOutDebug) std::cout  << "DATE TIME CALCULATION : " << DateTimeStr << std::endl;
+				        if (m_PingActive >= GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT)  //If received PINGS then assume network is active and therefore time is good.
+				        {
+					        DateTimePtr = SafeEngineering::Utils::GetDateTimeLCDString(DateTimeStr, sizeof(DateTimeStr), std::chrono::system_clock::now());	    	    
+					        if (StdOutDebug) std::cout  << "DATE TIME CALCULATION : " << DateTimeStr << std::endl;
 				        
-				        if (m_loopbuffer[1] == 0xEE) //Time HH MM SS,
-				        {
-				        	m_loopbuffer[2] = DateTimeStr[0];
-					        m_loopbuffer[3] = DateTimeStr[1];
-					        m_loopbuffer[4] = DateTimeStr[2];
-					        m_loopbuffer[5] = DateTimeStr[3];
-					        m_loopbuffer[6] = DateTimeStr[4];
-					        m_loopbuffer[7] = DateTimeStr[5];
-				        	m_loopbuffer[8] = 0x0A;
-					        sendreply = true;
-				        }
+					        if (m_loopbuffer[1] == 0xEE) //Time HH MM SS,
+						        {
+							        m_loopbuffer[2] = DateTimeStr[0];
+							        m_loopbuffer[3] = DateTimeStr[1];
+							        m_loopbuffer[4] = DateTimeStr[2];
+							        m_loopbuffer[5] = DateTimeStr[3];
+							        m_loopbuffer[6] = DateTimeStr[4];
+							        m_loopbuffer[7] = DateTimeStr[5];
+							        m_loopbuffer[8] = 0x0A;
+							        sendreply = true;
+						        }
 			        
-				        if (m_loopbuffer[1] == 0xEF) //Date YY - MM - DD
-				        {
-					        m_loopbuffer[2] = DateTimeStr[6];
-					        m_loopbuffer[3] = DateTimeStr[7];
-					        m_loopbuffer[4] = DateTimeStr[8];
-					        m_loopbuffer[5] = DateTimeStr[9];
-					        m_loopbuffer[6] = DateTimeStr[10];
-					        m_loopbuffer[7] = DateTimeStr[11];
-					        m_loopbuffer[8] = 0x0A;
-					        sendreply = true;
+					        if (m_loopbuffer[1] == 0xEF) //Date YY - MM - DD
+						        {
+							        m_loopbuffer[2] = DateTimeStr[6];
+							        m_loopbuffer[3] = DateTimeStr[7];
+							        m_loopbuffer[4] = DateTimeStr[8];
+							        m_loopbuffer[5] = DateTimeStr[9];
+							        m_loopbuffer[6] = DateTimeStr[10];
+							        m_loopbuffer[7] = DateTimeStr[11];
+							        m_loopbuffer[8] = 0x0A;
+							        sendreply = true;
+						        }
 				        }
 			        }		            
 #if SIM_MASTER_MODE
