@@ -26,6 +26,7 @@
 
 #define GATEWAY_PING_INTERVAL           15
 #define GATEWAY_PING_NUMBERS            5
+#define GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT   3
 
 #include "bbb.h"
 
@@ -66,6 +67,7 @@ namespace SafeEngineering
                 asio::ip::icmp::resolver resol(io);
                 asio::ip::icmp::resolver::query query(asio::ip::icmp::v4(), gatewayIP, "");
                 m_GatewayEP = *resol.resolve(query);
+	            m_PingActive = 0;
             }
             
             ~Serial()
@@ -341,8 +343,8 @@ namespace SafeEngineering
                     {
                         spdlog::get("E23DataLog")->info() << "Received signal: " << std::to_string(signalNnumber) << ". Ignore it now";
                         return;
-                    }
-                    
+                    }                    	                
+	                
                     // Close COM port
                     CloseSerial();
                     // Post message into Asio service to stop it
@@ -422,60 +424,72 @@ namespace SafeEngineering
             
             // Start periodially timer used to ping gateway
             void InitializePing()
-            {
-                // Initialize periodically ping timer
+            {	            
+	            // Initialize periodically ping timer
                 m_PingTimer.expires_from_now(boost::posix_time::seconds(GATEWAY_PING_INTERVAL));
                 m_PingTimer.async_wait(boost::bind(&Serial::HandlePingInterval, this));
             }
             
             // Process periodically timer and start first ping command
             void HandlePingInterval()
-            {
-                // Re-start ping timer
-                InitializePing();
-                
+            {                
                 // Reset numbers
                 m_SequenceNumber = 0;
-                m_PingActive = 0;   //AE Removed as this value will be cleared in the online / offline detection serial command.
                 
                 // Send first ping command of session
                 SendPingCommand();
             }
             
-            // Send asynchronously Ping packet to gateway
-            void SendPingCommand()
-            {
-                std::string body("\"Hello!\" from SerialTCP ping.");
+	        // Send asynchronously Ping packet to gateway
+	        void SendPingCommand()
+	        {
+		        std::string body("\"Hello!\" from SerialTCP ping.");
                 
-                std::string msg = "Send Ping command to gateway " + m_GateWayIP;
-                if (StdOutDebug) std::cout << msg << std::endl;
-                spdlog::get("E23DataLog")->info() << msg;
+		        std::string msg = "Send Ping command to gateway " + m_GateWayIP;
+		        if (StdOutDebug) std::cout << msg << std::endl;
+		        spdlog::get("E23DataLog")->info() << msg;
                 
-                // Create an ICMP header for an echo request.
-                icmp_header echo_request;
-                echo_request.type(icmp_header::echo_request);
-                echo_request.code(0);
-                echo_request.identifier(static_cast<unsigned short>(::getpid()));
-                echo_request.sequence_number(++m_SequenceNumber);
-                compute_checksum(echo_request, body.begin(), body.end());
+		        // Create an ICMP header for an echo request.
+		        icmp_header echo_request;
+		        echo_request.type(icmp_header::echo_request);
+		        echo_request.code(0);
+		        echo_request.identifier(static_cast<unsigned short>(::getpid()));
+		        echo_request.sequence_number(++m_SequenceNumber);
+		        compute_checksum(echo_request, body.begin(), body.end());
     
-                // Encode the request packet.
-                asio::streambuf request_buffer;
-                std::ostream os(&request_buffer);
-                os << echo_request << body;
+		        // Encode the request packet.
+		        asio::streambuf request_buffer;
+		        std::ostream os(&request_buffer);
+		        os << echo_request << body;
     
-                // Send the request.
-                m_PingSocket.send_to(request_buffer.data(), m_GatewayEP);
+				// Open the socket - this is required in case the network has become unavailable (i.e plug diconnected) in the mean time.		        
+		        asio::error_code ec;
+		        if (m_PingSocket.is_open())
+		        {
+			        m_PingSocket.close(ec);
+		        }
+		        m_PingSocket.open(asio::ip::icmp::v4(), ec);
+		        if (ec)
+		        {
+			        std::string msg = "Ping Socket Open Error ";
+			        if (StdOutDebug) std::cout << msg << std::endl;
+			        spdlog::get("E23DataLog")->info() << msg;    
+		        }
+		        else
+		        {			        		        
+			        // Send the request.
+			        m_PingSocket.send_to(request_buffer.data(), m_GatewayEP);
 
-                // Wait up to five seconds for a reply.
-                m_ResponseTimer.expires_from_now(boost::posix_time::seconds(2));
-                m_ResponseTimer.async_wait(boost::bind(&Serial::HandlePingTimeout, this));
+					// Wait up to five seconds for a reply.
+					m_ResponseTimer.expires_from_now(boost::posix_time::seconds(2));
+					m_ResponseTimer.async_wait(boost::bind(&Serial::HandlePingTimeout, this));
                 
-                // Start receiving.
-                // First, discard any data already in the buffer.
-                m_ReplyBuffer.consume(m_ReplyBuffer.size());
-                // Next, wait for a reply. We prepare the buffer to receive up to 64KB.
-                m_PingSocket.async_receive(m_ReplyBuffer.prepare(65536), boost::bind(&Serial::HandlePingResponse, this, _2));
+					// Start receiving.
+					// First, discard any data already in the buffer.
+					m_ReplyBuffer.consume(m_ReplyBuffer.size());
+					// Next, wait for a reply. We prepare the buffer to receive up to 64KB.
+					m_PingSocket.async_receive(m_ReplyBuffer.prepare(65536), boost::bind(&Serial::HandlePingResponse, this, _2));
+				}
             }
             
             // Process ping reply from gateway
@@ -503,13 +517,23 @@ namespace SafeEngineering
                     std::string msg = "Received reply from gateway " + m_GateWayIP;
                     if (StdOutDebug) std::cout << msg << std::endl;
                     spdlog::get("E23DataLog")->info() << msg;
-                    m_PingActive++;
+	                if (m_PingActive < GATEWAY_PING_NUMBERS)
+	                {
+		                m_PingActive++;
+	                }
                 }
             }
             
             // Handle timeout of Ping command
             void HandlePingTimeout()
-            {                
+            {
+				//Close the Ping Socket
+	            m_PingSocket.cancel();
+	            if (m_PingSocket.is_open())
+	            {
+		            asio::error_code ec;
+		            m_PingSocket.close(ec);
+	            }
                 if(m_SequenceNumber < GATEWAY_PING_NUMBERS)
                 {
                     // Requests must be sent no less than one second apart.
@@ -519,7 +543,8 @@ namespace SafeEngineering
                 else
                 {
                     spdlog::get("E23DataLog")->info() << "Received " << std::to_string(m_PingActive) << " replies among of " << std::to_string(GATEWAY_PING_NUMBERS) << " Ping commands";
-                    // Send value of m_PingActive to external device
+	                // Send value of m_PingActive to external device					
+	                InitializePing();  //Restart the Whole Sequence Again 
                 }
             }
             
@@ -589,8 +614,8 @@ namespace SafeEngineering
 									}
 									break;							
 							default:
-									if (rx_packet_cntr < 4)
-									//if (m_PingActive < 1)									
+									spdlog::get("E23DataLog")->info() << "PING ACTIVE (E6) : " << std::to_string(m_PingActive);
+									if(m_PingActive < GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT)									
 									{
 										m_loopbuffer[2] = 0x30;   // 0x30, 0x30 indictes offline
 										m_loopbuffer[3] = 0x30;				            
@@ -610,8 +635,8 @@ namespace SafeEngineering
 			        
 			        if (m_loopbuffer[1] == 0xE5) 
 			        {
-				        if (rx_packet_cntr < 4)    
-						//if (m_PingActive < 1)
+				        spdlog::get("E23DataLog")->info() << "PING ACTIVE (E5) : " << std::to_string(m_PingActive);                 				        
+				        if (m_PingActive < GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT)
 						{
 					        m_loopbuffer[2] = 0x30;   // 0x30, 0x30 indictes offline
 					        m_loopbuffer[3] = 0x30;				            
@@ -624,7 +649,10 @@ namespace SafeEngineering
 				        m_loopbuffer[4] = 0x0D;
 				        m_loopbuffer[5] = 0x0A;
 				        rx_packet_cntr = 0;
-				        //m_PingActive = 0;
+				        if (m_PingActive > 0)
+				        {
+					        m_PingActive--;    
+				        }				        
 				        sendreply = true;
 			        } 
 			        
@@ -875,7 +903,7 @@ namespace SafeEngineering
             // Numbers of total ping commands
             unsigned char m_SequenceNumber;
             // Numbers of successful ping commands
-	        unsigned char m_PingActive; // = 0;
+	        unsigned char m_PingActive; 
                         
         };  // Serial class
         
