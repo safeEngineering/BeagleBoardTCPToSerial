@@ -6,7 +6,9 @@
 #include <deque>
 #include <string>
 #include <cmath>
+#include <time.h>
 
+#include "NTP.hpp"
 #include <boost/signals2.hpp>
 #include <boost/bind.hpp>
 #include <asio.hpp>
@@ -27,6 +29,8 @@
 #define GATEWAY_PING_INTERVAL           15
 #define GATEWAY_PING_NUMBERS            5
 #define GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT   3
+
+#define NUMBER_OF_DATE_TIME_SYNCH_ATTEMPTS_PER_DAY 2
 
 #include "bbb.h"
 
@@ -50,7 +54,7 @@ namespace SafeEngineering
         class Serial
         {
         public:
-	        Serial(asio::io_service& io, bool consoleDebug, const std::string& gatewayIP)
+	        Serial(asio::io_service& io, bool consoleDebug, const std::string& gatewayIP, const std::string& ntpIP)
 		        : m_serialPort(io) 
 		        , StdOutDebug(consoleDebug)
                 , m_signalSet(io)
@@ -59,6 +63,7 @@ namespace SafeEngineering
                 , m_PingTimer(io)
                 , m_ResponseTimer(io)
                 , m_PingSocket(io, asio::ip::icmp::v4())
+		        , m_NTP(io, consoleDebug, ntpIP)
             {
                 m_signalSet.add(SIGINT);
                 m_signalSet.add(SIGTERM);
@@ -68,6 +73,7 @@ namespace SafeEngineering
                 asio::ip::icmp::resolver::query query(asio::ip::icmp::v4(), gatewayIP, "");
                 m_GatewayEP = *resol.resolve(query);
 	            m_PingActive = 0;
+	            m_NTP.m_NtpActive = 0;
             }
             
             ~Serial()
@@ -120,6 +126,10 @@ namespace SafeEngineering
                     
                     // Initialize gateway ping operation
                     InitializePing();
+
+	                // Initialize NTP operation
+	                m_NTP.InitializeNTP();
+	                
                 }
                 catch(std::exception& e)
                 {
@@ -344,6 +354,11 @@ namespace SafeEngineering
                         spdlog::get("E23DataLog")->info() << "Received signal: " << std::to_string(signalNnumber) << ". Ignore it now";
                         return;
                     }                    	                
+	                	                
+	                //Removed the below lines because it was causing a BAD File Descriptor Error
+	                //m_PingSocket.cancel();
+	                //m_ResponseTimer.cancel();
+	                //m_NTP.StopNTP();
 	                
                     // Close COM port
                     CloseSerial();
@@ -393,6 +408,12 @@ namespace SafeEngineering
                             // Delay 3s before to stop the application
                             m_GPIOReadTimer.expires_from_now(boost::posix_time::seconds(3));
                             m_GPIOReadTimer.wait();
+	                        
+							//Removed the below lines because it was causing a BAD File Descriptor Error
+							//m_PingSocket.cancel();
+							//m_ResponseTimer.cancel();
+							//m_NTP.StopNTP();
+	                        
                             // Close COM port
                             CloseSerial();
                             // Post message into Asio service to stop it
@@ -557,6 +578,28 @@ namespace SafeEngineering
 		        char DateTimeStr[12 + 1];
 		        char *DateTimePtr;
 		        
+		        time_t currentTime;
+		        struct tm *localTime;
+		        int hour;
+		        
+		        currentTime = time(NULL);
+		        localTime = localtime(&currentTime);
+		        hour = localTime->tm_hour;
+		        		        		        
+		        if (previousHour != hour)
+		        {
+			        std::string msg = "LOCALTIME HOUR: " + std::to_string(hour);
+			        if (StdOutDebug) std::cout  << msg << std::endl;
+			        spdlog::get("E23DataLog")->info() << msg;
+			        
+			        if (hour == 0)
+			        {
+				        date_set = NUMBER_OF_DATE_TIME_SYNCH_ATTEMPTS_PER_DAY;	//Set Date Twice at Midnight
+				        time_set = NUMBER_OF_DATE_TIME_SYNCH_ATTEMPTS_PER_DAY;	//Set Time Twice at Midnight
+			        }
+			        previousHour = hour;
+		        }
+		        
 		        memcpy(m_loopbuffer, pPacket, len);
 		        m_loopbufferLen = len;
 		        	                       	
@@ -594,7 +637,6 @@ namespace SafeEngineering
 									if (time_set > 0)
 									{
 										m_loopbuffer[1] = 0xEE;	
-										time_set--;
 									}
 									else
 									{
@@ -606,7 +648,6 @@ namespace SafeEngineering
 									if (date_set > 0)
 									{
 										m_loopbuffer[1] = 0xEF;	
-										date_set--;
 									}
 									else
 									{
@@ -714,34 +755,37 @@ namespace SafeEngineering
 			        
 			        if ((m_loopbuffer[1] == 0xEE)  || (m_loopbuffer[1] == 0xEF))   // Date/Time Commands
 			        {
-				        if (m_PingActive >= GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT)  //If received PINGS then assume network is active and therefore time is good.
+				        spdlog::get("E23DataLog")->info() << "NTP ACTIVE (E5) : " << std::to_string(m_NTP.m_NtpActive);   
+				        if (m_NTP.m_NtpActive >= NTP_POLL_ACCEPTABLE_ONLINE_COUNT)  //If received PINGS then assume network is active and therefore time is good.
 				        {
 					        DateTimePtr = SafeEngineering::Utils::GetDateTimeLCDString(DateTimeStr, sizeof(DateTimeStr), std::chrono::system_clock::now());	    	    
 					        if (StdOutDebug) std::cout  << "DATE TIME CALCULATION : " << DateTimeStr << std::endl;
 				        
 					        if (m_loopbuffer[1] == 0xEE) //Time HH MM SS,
-						        {
-							        m_loopbuffer[2] = DateTimeStr[0];
-							        m_loopbuffer[3] = DateTimeStr[1];
-							        m_loopbuffer[4] = DateTimeStr[2];
-							        m_loopbuffer[5] = DateTimeStr[3];
-							        m_loopbuffer[6] = DateTimeStr[4];
-							        m_loopbuffer[7] = DateTimeStr[5];
-							        m_loopbuffer[8] = 0x0A;
-							        sendreply = true;
-						        }
+						    {
+							    time_set--;
+							    m_loopbuffer[2] = DateTimeStr[0];
+							    m_loopbuffer[3] = DateTimeStr[1];
+							    m_loopbuffer[4] = DateTimeStr[2];
+							    m_loopbuffer[5] = DateTimeStr[3];
+							    m_loopbuffer[6] = DateTimeStr[4];
+							    m_loopbuffer[7] = DateTimeStr[5];
+							    m_loopbuffer[8] = 0x0A;
+							    sendreply = true;
+						    }
 			        
 					        if (m_loopbuffer[1] == 0xEF) //Date YY - MM - DD
-						        {
-							        m_loopbuffer[2] = DateTimeStr[6];
-							        m_loopbuffer[3] = DateTimeStr[7];
-							        m_loopbuffer[4] = DateTimeStr[8];
-							        m_loopbuffer[5] = DateTimeStr[9];
-							        m_loopbuffer[6] = DateTimeStr[10];
-							        m_loopbuffer[7] = DateTimeStr[11];
-							        m_loopbuffer[8] = 0x0A;
-							        sendreply = true;
-						        }
+						    {
+							    date_set--;
+							    m_loopbuffer[2] = DateTimeStr[6];
+							    m_loopbuffer[3] = DateTimeStr[7];
+							    m_loopbuffer[4] = DateTimeStr[8];
+							    m_loopbuffer[5] = DateTimeStr[9];
+							    m_loopbuffer[6] = DateTimeStr[10];
+							    m_loopbuffer[7] = DateTimeStr[11];
+							    m_loopbuffer[8] = 0x0A;
+							    sendreply = true;
+						    }
 				        }
 			        }		            
 #if SIM_MASTER_MODE
@@ -868,8 +912,8 @@ namespace SafeEngineering
 	        //State Variable to Periodically Update the QRFL LCD Display
 	        int lcd_update_cntr = 0;
 	        
-	        int date_set = 2;	//Set Date Twice on Startup
-	        int time_set = 2;	//Set Time Twice on Startup
+	        int date_set = NUMBER_OF_DATE_TIME_SYNCH_ATTEMPTS_PER_DAY;	//Set Date Twice on Startup
+	        int time_set = NUMBER_OF_DATE_TIME_SYNCH_ATTEMPTS_PER_DAY;	//Set Time Twice on Startup
 	        
 	        //Temporary Test Counter variable
 	        int tmp_cntr = 1;
@@ -877,7 +921,9 @@ namespace SafeEngineering
 	        int rx_packet_cntr = 0;
 	        
 	        bool StdOutDebug = false;
-	        	   
+	        
+	        int previousHour = -1;
+	        	        	   
             // Catch terminated events
             asio::signal_set m_signalSet;     
             
@@ -906,8 +952,12 @@ namespace SafeEngineering
             // Numbers of total ping commands
             unsigned char m_SequenceNumber;
             // Numbers of successful ping commands
-	        unsigned char m_PingActive; 
-                        
+	        unsigned char m_PingActive;
+	        
+	        //Ntp Client
+	        SafeEngineering::Comm::NTP m_NTP;
+	        
+                                    
         };  // Serial class
         
     }   // namespace Comm

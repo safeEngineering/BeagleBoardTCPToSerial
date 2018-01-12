@@ -46,7 +46,9 @@ namespace SafeEngineering
 	        Unit CurrentUnit;
             // Gateway IP address
             std::string GatewayIPAddr;
-            // Parameters of the remote boards in the system
+            // NTP Server IP address
+	        std::string NTPServerIPAddr;
+	        // Parameters of the remote boards in the system
             std::array<Unit, MAX_REMOTE_UNIT_NUMBERS> Units;
         } Settings;
 	    
@@ -286,7 +288,14 @@ namespace SafeEngineering
                     settings.GatewayIPAddr = gateway_ip->get<std::string>();
                     std::cout << "gateway_ipaddr: " << settings.GatewayIPAddr << std::endl;
                 }
-                
+	            
+	            auto ntpserver_ip = settingsjson.find("ntpserver_ipaddr");
+	            if (ntpserver_ip != settingsjson.end())
+	            {
+		            settings.NTPServerIPAddr = ntpserver_ip->get<std::string>();
+		            std::cout << "ntpserver_ipaddr: " << settings.NTPServerIPAddr << std::endl;
+	            }
+	                            
                 auto units = settingsjson.at("units");
                 index = 0;
                 for(auto it = units.begin(); it != units.end(); it++)

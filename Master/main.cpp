@@ -177,7 +177,7 @@ int main(int argc, char **argv)
         asio::io_service ios;
 	    	            
         // Construct serial object
-	    SafeEngineering::Comm::Serial serial1(ios, debugConsoleOutput, appSettings.GatewayIPAddr);
+	    SafeEngineering::Comm::Serial serial1(ios, debugConsoleOutput, appSettings.GatewayIPAddr, appSettings.NTPServerIPAddr);
         // Open UART connection
         serial1.OpenSerial();
         
