@@ -4,6 +4,7 @@
   "serial_number": "12345678",
   "self_id": 0,
   "gateway_ipaddr": "10.10.1.1",
+  "ntpserver_ipaddr": "10.10.1.1",
   "units": [
     {
       "unit_type": "master",
