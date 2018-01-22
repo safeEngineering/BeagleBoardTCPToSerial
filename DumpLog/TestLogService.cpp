@@ -12,6 +12,17 @@
 #include <sstream>
 #include <iomanip>
 
+#define DD_PACKET_DATA_LENGTH 16
+#define DD_PACKET_STX '?'
+#define DD_PACKET_ETX "\r"
+#define DD_PACKET_IPADDR_CMD 'A'
+#define DD_PACKET_NETMASK_CMD 'B'
+#define DD_PACKET_GATEWAY_CMD 'C'
+#define DD_PACKET_NTPADDR_CMD 'D'
+#define DD_PACKET_DATETIME_CMD 'E'
+#define DD_PACKET_NETWORKSTATUS_CMD 'F'
+#define DD_PACKET_LENGTH (DD_PACKET_DATA_LENGTH+3)   //STX, CMD, DATA, ETX  
+
 namespace aurizon
 {
 
@@ -28,7 +39,7 @@ std::shared_ptr<TestLogService> TestLogService::Instance(asio::io_service &ioSer
 }
 
 TestLogService::TestLogService(asio::io_service &ioService, const std::string &strPort, uint32_t nBaud) :
-        m_ioService(ioService), m_timer(ioService), m_strPort(strPort), m_nBaud(nBaud)
+        m_ioService(ioService), m_timer(ioService), r_timer(ioService), m_strPort(strPort), m_nBaud(nBaud)
 {
 }
 
@@ -64,6 +75,7 @@ void TestLogService::stop()
     m_strBuffer.clear();
     m_nSearchIndex = 0;
     stopTimer();
+	r_timer.cancel(errorCode);
 }
 
 void TestLogService::startConnection()
@@ -73,11 +85,12 @@ void TestLogService::startConnection()
     {
         clearReadBuffer();
         startRead();
+	    startRestartTimer();
     }
     else
     {
         m_ptrSerialPort = nullptr;
-        startRestartTimer();
+        //startRestartTimer();
     }
 }
 
@@ -166,7 +179,7 @@ void TestLogService::handleRead(const std::error_code& errorCode, std::size_t nB
         std::error_code ec;
         m_ptrSerialPort->close(ec);
         m_ptrSerialPort = nullptr;
-        startRestartTimer();
+        //startRestartTimer();
         return;
     }
 
@@ -185,7 +198,7 @@ void TestLogService::handleRead(const std::error_code& errorCode, std::size_t nB
             {
                 if (m_strBuffer.size() > 4096)
                 {
-                    addLog(m_strBuffer);
+                    addLog(m_strBuffer);	                	                	                	                		           	                
                     m_strBuffer.clear();
                     m_nSearchIndex = 0;
                 }
@@ -201,7 +214,7 @@ void TestLogService::handleRead(const std::error_code& errorCode, std::size_t nB
                 addLog(str);
                 m_strBuffer.erase(0, nEndPos + 4);
                 m_nSearchIndex = 0;
-                m_logTime = std::chrono::system_clock::now();
+                m_logTime = std::chrono::system_clock::now();	            	            
             }
         }
     }
@@ -221,15 +234,15 @@ void TestLogService::startRestartTimer()
         return;
     }
 
-    m_bRestarting = true;
+	m_bRestarting = true;
     std::error_code errorCode;
-    m_timer.expires_after(std::chrono::milliseconds(5000), errorCode);
-    m_timer.async_wait(
+    r_timer.expires_after(std::chrono::milliseconds(5000), errorCode);
+    r_timer.async_wait(
             std::bind(&TestLogService::handleRestartTimer, this, std::placeholders::_1));
 }
 
 void TestLogService::handleRestartTimer(const std::error_code& errorCode)
-{
+{	 
     if (errorCode == asio::error::operation_aborted)
     {
         return;
@@ -242,7 +255,48 @@ void TestLogService::handleRestartTimer(const std::error_code& errorCode)
 
     m_bRestarting = false;
 
-    startConnection();
+	//startConnection();
+	
+	
+	std::string inputStr; 
+	
+	switch (sequenceCounter)
+	{
+	case 0:
+		inputStr = "?A023111001101    \r";
+		break;
+	case 1:
+		inputStr = "?B022222002102    \r";
+		break;
+	case 2:
+		inputStr = "?C033133003103    \r";
+		break;
+	case 3:
+		inputStr = "?D044144004104    \r";
+		break;	
+	default:
+		inputStr = "?A000000000000    \r";
+		break;	
+	}
+	
+	sequenceCounter++;
+	sequenceCounter = sequenceCounter % 4;;
+	
+	auto self = shared_from_this();
+	m_ptrSerialPort->async_write_some(asio::buffer(inputStr, 19),		                		                
+		[this, self](const std::error_code& errorCode, std::size_t nBytesReceived)
+		{
+			if (!errorCode)
+			{
+				std::cout << "Sent Bytes - " << nBytesReceived <<  std::endl;  				
+			}
+			else
+			{
+				std::cerr << "Sent" << std::endl;  
+			}				                
+		});		
+	startRestartTimer();
+	
 }
 
 void TestLogService::startRxTimer()
@@ -252,6 +306,16 @@ void TestLogService::startRxTimer()
     m_timer.async_wait(
             std::bind(&TestLogService::handleRxTimer, this, std::placeholders::_1));
 }
+	
+std::string TestLogService::ReplaceAll(std::string str, const std::string& from, const std::string& to) 
+{
+	size_t start_pos = 0;
+	while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+		str.replace(start_pos, from.length(), to);
+		start_pos += to.length();  // Handles case where 'to' is a substring of 'from'
+	}
+	return str;
+}	
 
 void TestLogService::handleRxTimer(const std::error_code& errorCode)
 {
@@ -264,12 +328,93 @@ void TestLogService::handleRxTimer(const std::error_code& errorCode)
     {
         throw std::runtime_error("TestLogService rx timer: " + errorCode.message());
     }
+	
+	addLog(m_strBuffer);
+	
+	std::string s = m_strBuffer;
+	std::string delimiter = DD_PACKET_ETX;
 
-    addLog(m_strBuffer);
-    m_strBuffer.clear();
+	size_t pos = 0;
+	std::string token;
+	while ((pos = s.find(delimiter)) != std::string::npos) {
+		token = s.substr(0, pos);
+		if (ParseCommand(token))   
+		{
+			    			
+		}
+		s.erase(0, pos + delimiter.length());
+	}
+	
+	m_strBuffer.clear();
     m_nSearchIndex = 0;
 }
 
+//Parse a Command of the format "?CAAABBBCCCDDD    "
+bool TestLogService::ParseCommand(std::string str)
+{
+	const char *rxbuffer;
+	int i;		
+	uint16_t ip[4];	
+	char IPAddressString[DD_PACKET_DATA_LENGTH + 1];
+	
+	
+	if (str.length() != (DD_PACKET_LENGTH-1))  // Leave Out ETX in length comparison
+	{
+		return false;
+	}
+	
+	rxbuffer = str.c_str();
+	
+	if (rxbuffer[0] != '?') return false;
+								
+	for (i = 2; i < 14; i++)   //Check all Numeric
+	{
+		if (!((rxbuffer[i] >= (uint8_t) '0') && (rxbuffer[i] <= (uint8_t) '9')))
+		{			
+			return false;	
+		}
+			
+	}
+		
+	sscanf(&rxbuffer[2], "%03hd%03hd%03hd%03hd", &ip[0], &ip[1], &ip[2], &ip[3]);   //Parse IP address array as short ints to ensure it is less that or equal to the 16 bit number memory allocation.
+	
+	for(i = 0 ; i < 4 ; i++)
+	{
+		ip[i] &= 0x00FF;    //Truncate to 8 bit number;
+	}
+	
+	snprintf(IPAddressString, DD_PACKET_DATA_LENGTH, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);		
+		
+				
+	switch(rxbuffer[1])
+	{
+		case DD_PACKET_IPADDR_CMD:
+			IP = asio::ip::address_v4::from_string(IPAddressString);
+			std::cout << "IP - " << IP.to_string() <<  std::endl;
+			break;
+		case DD_PACKET_NETMASK_CMD:
+			NETMASK = asio::ip::address_v4::from_string(IPAddressString);
+			std::cout << "NETMASK - " << NETMASK.to_string() <<  std::endl;					
+			break;
+		case DD_PACKET_GATEWAY_CMD:
+			GATEWAY = asio::ip::address_v4::from_string(IPAddressString);
+			std::cout << "GATEWAY - " << GATEWAY.to_string() <<  std::endl;					
+			break;
+		case DD_PACKET_NTPADDR_CMD:
+			NTPSERVER = asio::ip::address_v4::from_string(IPAddressString);
+			std::cout << "NTPSERVER - " << NTPSERVER.to_string() <<  std::endl;					
+			break;
+		case DD_PACKET_DATETIME_CMD:
+			break;
+		case DD_PACKET_NETWORKSTATUS_CMD:
+			break;
+		default:
+			return false;
+	}
+								
+	return true;	
+}
+	
 void TestLogService::stopTimer()
 {
     std::error_code errorCode;
@@ -285,8 +430,7 @@ void TestLogService::clearReadBuffer()
 }
 
 void TestLogService::addLog(const std::string& str)
-{
-#warning also send to aurizon_node
+{		
 	spdlog::get("dump_data_log")->info() << timeString(m_logTime) << "\r\n" << str;
 }
 
@@ -305,4 +449,6 @@ static std::string timeString(const std::chrono::system_clock::time_point& tp)
     return std::string(szDateBuffer, nStartLength + nEndLength);
 }
 
+
+	
 } /* namespace aurizon */

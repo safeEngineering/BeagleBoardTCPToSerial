@@ -56,6 +56,10 @@ private:
     void clearReadBuffer();
 
     void processBuffer();
+	
+	std::string ReplaceAll(std::string str, const std::string& from, const std::string& to);
+	
+	bool ParseCommand(std::string str);
 
     void addLog(const std::string& str);
 
@@ -64,6 +68,7 @@ private:
     asio::io_service& m_ioService;
     std::shared_ptr<asio::serial_port> m_ptrSerialPort;
     Timer<std::chrono::steady_clock> m_timer;
+	Timer<std::chrono::steady_clock> r_timer;
     const std::string m_strPort;
     const uint32_t m_nBaud;
 
@@ -78,6 +83,14 @@ private:
 
     bool m_bIsRunning = false;
     bool m_bRestarting = false;
+	
+	int16_t sequenceCounter = 0;
+	
+	asio::ip::address_v4 IP;
+	asio::ip::address_v4 GATEWAY;
+	asio::ip::address_v4 NETMASK;
+	asio::ip::address_v4 NTPSERVER;
+	
 };
 
 } /* namespace aurizon */

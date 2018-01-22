@@ -656,21 +656,26 @@ namespace SafeEngineering
 									break;							
 							default:
 									spdlog::get("E23DataLog")->info() << "PING ACTIVE (E6) : " << std::to_string(m_PingActive);
-									if(m_PingActive < GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT)									
+									if (m_PingActive < GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT)
 									{
-										m_loopbuffer[2] = 0x30;   // 0x30, 0x30 indictes offline
-										m_loopbuffer[3] = 0x30;				            
+										m_loopbuffer[2] = 0x30;    // 0x30, 0x30 indictes offline			            
 									}
 									else
 									{
-										m_loopbuffer[2] = 0x31;   // 0x31, 0x31 indictes online
-										m_loopbuffer[3] = 0x31;
+										m_loopbuffer[2] = 0x31;    // 0x31, 0x31 indictes online
+									}
+									if (m_NTP.m_NtpActive < NTP_POLL_ACCEPTABLE_ONLINE_COUNT)  
+									{
+										m_loopbuffer[3] = 0x30;    // 0x30, 0x30 indictes offline			            
+									}
+									else
+									{
+										m_loopbuffer[3] = 0x31;    // 0x31, 0x31 indictes online					       
 									}
 									m_loopbuffer[4] = 0x0D;
-									m_loopbuffer[5] = 0x0A;									
+									m_loopbuffer[5] = 0x0A;							
 									sendreply = true;
-									lcd_update_cntr = 0;
-				        
+									lcd_update_cntr = 0;				        
 				        }				        					    				        
 			        }
 			        
@@ -679,13 +684,19 @@ namespace SafeEngineering
 				        spdlog::get("E23DataLog")->info() << "PING ACTIVE (E5) : " << std::to_string(m_PingActive);                 				        
 				        if (m_PingActive < GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT)
 						{
-					        m_loopbuffer[2] = 0x30;   // 0x30, 0x30 indictes offline
-					        m_loopbuffer[3] = 0x30;				            
+					        m_loopbuffer[2] = 0x30;   // 0x30, 0x30 indictes offline			            
 				        }
 				        else
 				        {
 					        m_loopbuffer[2] = 0x31;   // 0x31, 0x31 indictes online
-					        m_loopbuffer[3] = 0x31;
+				        }
+				        if (m_NTP.m_NtpActive < NTP_POLL_ACCEPTABLE_ONLINE_COUNT)  
+				        {
+					        m_loopbuffer[3] = 0x30;   // 0x30, 0x30 indictes offline			            
+				        }
+				        else
+				        {
+					        m_loopbuffer[3] = 0x31;   // 0x31, 0x31 indictes online					       
 				        }
 				        m_loopbuffer[4] = 0x0D;
 				        m_loopbuffer[5] = 0x0A;

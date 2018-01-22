@@ -15,7 +15,7 @@
 #include <iostream>
 #include <memory>
 
-#define VERSION_STR "V0.1"
+#define VERSION_STR "V0.2"
 
 /************************************************************
  * main method
