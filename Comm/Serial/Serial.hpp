@@ -13,6 +13,8 @@
 #include <boost/bind.hpp>
 #include <asio.hpp>
 
+#define VERSION_STR "V0R04"
+
 #define SERIAL_BUFFER_LENGTH            40
 #define SERIAL_PACKET_LENGTH            10
 
@@ -632,6 +634,10 @@ namespace SafeEngineering
 							case 4:
 									m_loopbuffer[1] = 0xED;
 									break;					       
+					        /*   
+					
+							//NO longer required to Synch time with this service -Data Dump Service now does this
+			        
 							case 5:
 									//Attempt Non Requested Time Synch to QRFL only twice after starting program, Requested Time Synchs that occur when the QRFL is reset can be done as many times are required
 									if (time_set > 0)
@@ -654,6 +660,7 @@ namespace SafeEngineering
 										m_loopbuffer[1] = 0xE5;									
 									}
 									break;							
+							*/
 							default:
 									spdlog::get("E23DataLog")->info() << "PING ACTIVE (E6) : " << std::to_string(m_PingActive);
 									if (m_PingActive < GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT)
@@ -708,13 +715,9 @@ namespace SafeEngineering
 				        sendreply = true;
 			        } 
 			        
-			        if (m_loopbuffer[1] == 0xEA) // Software Version V1R23
+			        if (m_loopbuffer[1] == 0xEA) // Software Version 
 			        {
-				        m_loopbuffer[2] = 0x56;
-				        m_loopbuffer[3] = 0x31;
-				        m_loopbuffer[4] = 0x52;
-				        m_loopbuffer[5] = 0x32;
-				        m_loopbuffer[6] = 0x33;
+				        snprintf((char *) &(m_loopbuffer[2]), 6, VERSION_STR);				        
 				        m_loopbuffer[7] = 0x0D;
 				        m_loopbuffer[8] = 0x0A;
 				        sendreply = true;
@@ -763,12 +766,15 @@ namespace SafeEngineering
 				        }
 			        }
 			        
-			        
+			        /*   
+					
+					//NO longer required to Synch time with this service -Data Dump Service now does this
+			         
 			        if ((m_loopbuffer[1] == 0xEE)  || (m_loopbuffer[1] == 0xEF))   // Date/Time Commands
 			        {
-				        spdlog::get("E23DataLog")->info() << "NTP ACTIVE (E5) : " << std::to_string(m_NTP.m_NtpActive);   
+				        spdlog::get("E23DataLog")->info() << "NTP ACTIVE (E5) : " << std::to_string(m_NTP.m_NtpActive);   				        
 				        if (m_NTP.m_NtpActive >= NTP_POLL_ACCEPTABLE_ONLINE_COUNT)  //If received PINGS then assume network is active and therefore time is good.
-				        {
+				        {					        
 					        DateTimePtr = SafeEngineering::Utils::GetDateTimeLCDString(DateTimeStr, sizeof(DateTimeStr), std::chrono::system_clock::now());	    	    
 					        if (StdOutDebug) std::cout  << "DATE TIME CALCULATION : " << DateTimeStr << std::endl;
 				        
@@ -798,7 +804,9 @@ namespace SafeEngineering
 							    sendreply = true;
 						    }
 				        }
-			        }		            
+			        }
+					*/
+			        
 #if SIM_MASTER_MODE
 			        
 			        if (m_loopbuffer[1] == 0xCB)

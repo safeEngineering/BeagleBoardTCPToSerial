@@ -7,10 +7,7 @@
  ************************************************************/
 
 #include "TestLogService.h"
-#include "Controller.h"
 #include "spdlog/spdlog.h"
-#include "NTP.hpp"
-#include "PING.hpp"
 #include <memory>
 #include <sstream>
 #include <fstream>
@@ -19,27 +16,18 @@
 #include <unistd.h>
 #include <stdio.h>
 
-//Packet Format ?C123456789012   N@XXXX\r
 #define DD_PACKET_CRC_LENGTH 5
 #define DD_PACKET_DATA_LENGTH 16
 #define DD_PACKET_STX '?'
 #define DD_PACKET_ETX "\r"
-#define DD_PACKET_PREAMBLE_LENGTH 2   // ?C
 #define DD_PACKET_CRC_TAG '@'
 #define DD_PACKET_IPADDR_CMD 'A'
 #define DD_PACKET_NETMASK_CMD 'B'
 #define DD_PACKET_GATEWAY_CMD 'C'
 #define DD_PACKET_NTPADDR_CMD 'D'
 #define DD_PACKET_DATETIME_CMD 'E'
-#define DD_PACKET_VERSION_CMD 'F'
-#define DD_PACKET_NETWORKSTATUS_BYTE_POS (DD_PACKET_DATA_LENGTH-1) 
-#define DD_PACKET_NETWORKSTATUS_BYTE_PINGACTIVE 0x01
-#define DD_PACKET_NETWORKSTATUS_BYTE_NTPACTIVE 0x02
+#define DD_PACKET_NETWORKSTATUS_CMD 'F'
 #define DD_PACKET_LENGTH (DD_PACKET_DATA_LENGTH+3+DD_PACKET_CRC_LENGTH)   //STX, CMD, DATA, CRC, ETX  
-
-#define TIME_SYNC_TOLERANCE_SECS 5
-#define TIME_SYNC_REPEAT_LOCKOUT  5
-
 
 namespace aurizon
 {
@@ -57,11 +45,9 @@ std::shared_ptr<TestLogService> TestLogService::Instance(asio::io_service &ioSer
 }
 
 TestLogService::TestLogService(asio::io_service &ioService, const std::string &strPort, uint32_t nBaud) :
-        m_ioService(ioService), m_timer(ioService), r_timer(ioService), m_strPort(strPort), m_nBaud(nBaud), m_NTP(ioService, true, "8.8.8.8"), m_PING(ioService, true, "8.8.8.8")
+        m_ioService(ioService), m_timer(ioService), r_timer(ioService), m_strPort(strPort), m_nBaud(nBaud)
 {
 		sequenceCounter = (int16_t) DD_PACKET_IPADDR_CMD;
-		m_NTP.m_NtpActive = 0;
-		m_PING.m_PingActive = 0;			
 }
 
 TestLogService::~TestLogService()
@@ -69,88 +55,6 @@ TestLogService::~TestLogService()
 }
 
 static std::string timeString(const std::chrono::system_clock::time_point& tp);
-	
-	
-void TestLogService::ReadNTPandGatewayIPAddresses()
-	{
-				
-		// Load json file from current directory
-		std::ifstream jsonFile("/home/debian/QRFL_Network_Configuration.json");	
-		// JSON object
-		nlohmann::json settingsjson;
-		// Deserialize json object from text content
-		
-		jsonFile >> settingsjson;
-	
-		
-		auto valueA = settingsjson.find("Gateway_Configuration");
-		if (valueA != settingsjson.end()) 
-		{				
-			try
-			{
-			
-				std::string ipaddress_str = valueA->get<std::string>();
-				asio::ip::address_v4 ipaddress = asio::ip::address_v4::from_string(ipaddress_str);				
-				char ipaddress_string[19 + 1];
-				ulong ll;
-				ulong ip[4];	
-				int i;
-				
-				ll = ipaddress.to_ulong();
-												
-				ip[3] = ((ll >> 24) & 0xFF);
-				ip[2] = ((ll >> 16) & 0xFF);
-				ip[1] = ((ll >> 8) & 0xFF);
-				ip[0] = (ll & 0xFF);
-				
-				snprintf(ipaddress_string, 19, "%d.%d.%d.%d", ip[3], ip[2], ip[1], ip[0]);	
-							
-				std::string ip_address = ipaddress_string;
-				
-				std::cout << "GATEWAY IP ADDRESS " << ip_address << std::endl;
-			
-				m_PING.SetIPAddress(ip_address);
-			}
-			catch(const std::exception& ex)
-			{
-				
-			}												
-		}
-		
-		auto valueB = settingsjson.find("NTP_Configuration");
-		if (valueB != settingsjson.end()) 
-		{	
-			try
-			{
-				std::string ipaddress_str = valueB->get<std::string>();
-				asio::ip::address_v4 ipaddress = asio::ip::address_v4::from_string(ipaddress_str);				
-				char ipaddress_string[19 + 1];
-				ulong ll;
-				ulong ip[4];	
-				int i;
-				
-				ll = ipaddress.to_ulong();
-												
-				ip[3] = ((ll >> 24) & 0xFF);
-				ip[2] = ((ll >> 16) & 0xFF);
-				ip[1] = ((ll >> 8) & 0xFF);
-				ip[0] = (ll & 0xFF);
-				
-				snprintf(ipaddress_string, 19, "%d.%d.%d.%d", ip[3], ip[2], ip[1], ip[0]);	
-							
-				std::string ip_address = ipaddress_string;
-				
-				std::cout << "NTP IP ADDRESS " << ip_address << std::endl;
-			
-				m_NTP.SetIPAddress(ip_address);	
-			}
-			catch(const std::exception& ex)
-			{
-				
-			}												
-		}
-	}
-		
 
 void TestLogService::start()
 {
@@ -177,10 +81,8 @@ void TestLogService::stop()
     }
     m_strBuffer.clear();
     m_nSearchIndex = 0;
-	m_NTP.StopNTP();
-	m_PING.StopPing();
     stopTimer();
-	r_timer.cancel(errorCode);		
+	r_timer.cancel(errorCode);
 }
 
 void TestLogService::startConnection()
@@ -191,13 +93,6 @@ void TestLogService::startConnection()
         clearReadBuffer();
         startRead();
 	    startRestartTimer();
-	    
-	    ReadNTPandGatewayIPAddresses();
-	    
-	    // Initialize NTP operation
-	    m_NTP.InitializeNTP();
-	    // Initialize PING operation
-	    m_PING.InitializePing();
     }
     else
     {
@@ -368,55 +263,35 @@ void TestLogService::handleRestartTimer(const std::error_code& errorCode)
     m_bRestarting = false;
 
 	//startConnection();
+		
 	std::string inputStr; 
-		
-	if ((QRFLTimeDifference > TIME_SYNC_TOLERANCE_SECS) && (QRFLTimeDifferenceBlankOutCounter == 0) && (m_NTP.m_NtpActive >= NTP_POLL_ACCEPTABLE_ONLINE_COUNT))  //If time out of synch and NTP Server is active
+	
+	switch (sequenceCounter)
 	{
+	case DD_PACKET_IPADDR_CMD:
 		inputStr = "";
-		GetDateTimeQRFLSynch(inputStr);
-		QRFLTimeDifferenceBlankOutCounter = TIME_SYNC_REPEAT_LOCKOUT;
-	}
-	else
-	{
-		
-		if (QRFLTimeDifferenceBlankOutCounter > 0)
-		{
-			QRFLTimeDifferenceBlankOutCounter--;
-		}
-		
-		switch (sequenceCounter)
-		{
-		case DD_PACKET_IPADDR_CMD:
-			inputStr = "";
-			LoadNetworkConfigJSONFile(DD_PACKET_IPADDR_CMD, inputStr);
-			sequenceCounter = (int16_t) DD_PACKET_NETMASK_CMD;
-			break;
-		case DD_PACKET_NETMASK_CMD:
-			inputStr = "";
-			LoadNetworkConfigJSONFile(DD_PACKET_NETMASK_CMD, inputStr);
-			sequenceCounter = (int16_t) DD_PACKET_GATEWAY_CMD;
-			break;
-		case DD_PACKET_GATEWAY_CMD:
-			inputStr = "";
-			LoadNetworkConfigJSONFile(DD_PACKET_GATEWAY_CMD, inputStr);
-			sequenceCounter = (int16_t) DD_PACKET_NTPADDR_CMD;
-			break;
-		case DD_PACKET_NTPADDR_CMD:
-			inputStr = "";
-			LoadNetworkConfigJSONFile(DD_PACKET_NTPADDR_CMD, inputStr);
-			sequenceCounter = (int16_t) DD_PACKET_VERSION_CMD;
-			break;	
-		case DD_PACKET_VERSION_CMD:
-			inputStr = "";
-			LoadVersion(DD_PACKET_VERSION_CMD, inputStr);				
-			ReadNTPandGatewayIPAddresses();						//Update the IP and NTP here as good as any place
-			sequenceCounter = (int16_t) DD_PACKET_IPADDR_CMD;
-			break;
-		default:
-			inputStr = "";
-			sequenceCounter = (int16_t) DD_PACKET_IPADDR_CMD;
-			break;	
-		}
+		LoadNetworkConfigJSONFile(DD_PACKET_IPADDR_CMD, inputStr);
+		sequenceCounter = (int16_t) DD_PACKET_NETMASK_CMD;
+		break;
+	case DD_PACKET_NETMASK_CMD:
+		inputStr = "";
+		LoadNetworkConfigJSONFile(DD_PACKET_NETMASK_CMD, inputStr);
+		sequenceCounter = (int16_t) DD_PACKET_GATEWAY_CMD;
+		break;
+	case DD_PACKET_GATEWAY_CMD:
+		inputStr = "";
+		LoadNetworkConfigJSONFile(DD_PACKET_GATEWAY_CMD, inputStr);
+		sequenceCounter = (int16_t) DD_PACKET_NTPADDR_CMD;
+		break;
+	case DD_PACKET_NTPADDR_CMD:
+		inputStr = "";
+		LoadNetworkConfigJSONFile(DD_PACKET_NTPADDR_CMD, inputStr);
+		sequenceCounter = (int16_t) DD_PACKET_IPADDR_CMD;
+		break;	
+	default:
+		inputStr = "";
+		sequenceCounter = (int16_t) DD_PACKET_IPADDR_CMD;
+		break;	
 	}
 		
 	if (inputStr != "")
@@ -561,7 +436,7 @@ bool TestLogService::ParseCommand(std::string str)
 		return false;
 	}
 			
-	if ((rxbuffer[1] != DD_PACKET_DATETIME_CMD))   //i.e This is an IP Address Command
+	if ((rxbuffer[1] != DD_PACKET_DATETIME_CMD) && (rxbuffer[1] != DD_PACKET_NETWORKSTATUS_CMD))   //i.e This is an IP Address Command
 	{			
 		sscanf(&rxbuffer[2], "%03hd%03hd%03hd%03hd", &ip[0], &ip[1], &ip[2], &ip[3]);    //Parse IP address array as short ints to ensure it is less that or equal to the 16 bit number memory allocation.	
 		for(i = 0 ; i < 4 ; i++)
@@ -617,15 +492,13 @@ bool TestLogService::ParseCommand(std::string str)
 				
 				time_t systemTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 				
-				QRFLTimeDifference = difftime(systemTime, QRFLTime);
+				time_t timediff = difftime(systemTime, QRFLTime);
 				
-				std::cout << "QRFL TIME - " << date << "-" << month << "-" << year << " " << hr << ":" << min << ":" << sec <<  "{" << QRFLTimeDifference << "}" << std::endl;						
+				std::cout << "QRFL TIME - " << date << "-" << month << "-" << year << " " << hr << ":" << min << ":" << sec <<  "{" << timediff << "}" << std::endl;						
 												
 			}
-			else
-			{
-				QRFLTimeDifference = 0;
-			}
+			break;
+		case DD_PACKET_NETWORKSTATUS_CMD:
 			break;
 		default:
 			return false;
@@ -663,6 +536,12 @@ bool TestLogService::ParseCommand(std::string str)
 					break;
 				case DD_PACKET_NTPADDR_CMD:
 					json_tag = "NTP_IP";			
+					break;
+				case DD_PACKET_DATETIME_CMD:
+					return;
+					break;
+				case DD_PACKET_NETWORKSTATUS_CMD:
+					return;
 					break;
 				default:
 					return;										
@@ -715,7 +594,7 @@ bool TestLogService::ParseCommand(std::string str)
 			//First Time running so Initialise old Details
 			if((oldIPAddress == "") || (oldGatewayAddress == "") || (oldNetmaskAddress == "") || (oldNTPServerAddress == ""))
 			{
-				oldDetailsMatchCounter = 1;   //Adjust counter to reflect first lot of data recieved
+				oldDetailsMismatchCounter = 0;
 				oldIPAddress = IP.to_string();
 				oldGatewayAddress = GATEWAY.to_string();
 				oldNetmaskAddress = NETMASK.to_string();
@@ -726,34 +605,28 @@ bool TestLogService::ParseCommand(std::string str)
 			
 			if ((oldIPAddress == IP.to_string()) && (oldGatewayAddress == GATEWAY.to_string()) && (oldNetmaskAddress == NETMASK.to_string()) && (oldNTPServerAddress == NTPSERVER.to_string()))
 			{
-				//If there are two consecutive matches of any of the details of the Network Settings - Update the settings file and start the re-boot sequence
-				oldDetailsMatchCounter++;
+				//All Settings Match - Do Nothing
+				oldDetailsMismatchCounter = 0;
 				std::cout << "SAME[" << IP.to_string() << "][MASK:" << NETMASK.to_string() << "][GWAY:" << GATEWAY.to_string() << "][NTP:" << NTPSERVER.to_string() << "]" << std::endl;											
-				if (oldDetailsMatchCounter == 2)	
-				{									
-					std::cout << "CREATE SETTINGS FILE [IP:" << IP.to_string() << "][MASK:" << NETMASK.to_string() << "][GWAY:" << GATEWAY.to_string() << "][NTP:" << NTPSERVER.to_string() << "]" << std::endl;						
-					std::ofstream outfile("/home/debian/QRFL_Network_Settings.json", std::ios::out);
-					outfile << settingsjson; 					
-				}						
-				else if (oldDetailsMatchCounter > 2)
-				{
-					oldDetailsMatchCounter = 0;
-					system("/home/debian/QRFL_Boot_Script.sh");	
-					oldIPAddress = "";
-					oldGatewayAddress = "";
-					oldNetmaskAddress = "";
-					oldNTPServerAddress = "";
-				}
+				
 			}
 			else
 			{
-				//Settings Differ Start Again.
-				oldDetailsMatchCounter = 0;				
-				std::cout << "MISMATCH[" << IP.to_string() << "][MASK:" << NETMASK.to_string() << "][GWAY:" << GATEWAY.to_string() << "][NTP:" << NTPSERVER.to_string() << "]" << std::endl;																						
-				oldIPAddress = "";
-				oldGatewayAddress = "";
-				oldNetmaskAddress = "";
-				oldNTPServerAddress = "";
+				//If there are two consecutive Mismatches of any of the details of the Network Settings - Update the settings file and start the re-boot sequence
+				oldDetailsMismatchCounter++;
+				std::cout << "MISMATCH[" << IP.to_string() << "][MASK:" << NETMASK.to_string() << "][GWAY:" << GATEWAY.to_string() << "][NTP:" << NTPSERVER.to_string() << "]" << std::endl;											
+				if (oldDetailsMismatchCounter == 2)	
+				{									
+					std::cout << "CREATE SETTINGS FILE [IP:" << IP.to_string() << "][MASK:" << NETMASK.to_string() << "][GWAY:" << GATEWAY.to_string() << "][NTP:" << NTPSERVER.to_string() << "]" << std::endl;						
+				std::ofstream outfile("/home/debian/QRFL_Network_Settings.json", std::ios::out);
+				outfile << settingsjson; 					
+				}						
+				else if (oldDetailsMismatchCounter > 2)
+				{
+					system("/home/debian/QRFL_Boot_Script.sh");									
+					oldDetailsMismatchCounter = 0;
+				}
+			
 			}
 																					
 		}
@@ -769,44 +642,12 @@ bool TestLogService::ParseCommand(std::string str)
 		}    
 	}
 	
-	bool TestLogService::LoadVersion(uint8_t ip_address_type, std::string& version)	
-	{
-						
-		uint8_t activeState = ' ';		
-		char version_string[DD_PACKET_LENGTH + 2];
-		char VERSION_STR_CHAR_ARRAY[DD_PACKET_DATA_LENGTH + 1];
-		strncpy(VERSION_STR_CHAR_ARRAY, VERSION_STR, DD_PACKET_DATA_LENGTH);
-				
-		activeState = '0';
-		if (m_NTP.m_NtpActive >= NTP_POLL_ACCEPTABLE_ONLINE_COUNT) 
-		{									
-			activeState |= DD_PACKET_NETWORKSTATUS_BYTE_NTPACTIVE;
-		}
-		if (m_PING.m_PingActive >= GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT) 
-		{									
-			activeState |= DD_PACKET_NETWORKSTATUS_BYTE_PINGACTIVE;
-		}
-						
-		snprintf(version_string, (DD_PACKET_LENGTH + 1), "?%c%c%c%c            %c\r", ip_address_type, VERSION_STR_CHAR_ARRAY[1], VERSION_STR_CHAR_ARRAY[3], VERSION_STR_CHAR_ARRAY[4], activeState);   //PickOut Numbers x from VERSION STR Format VxRxx and Construct the command string first without the check sum (DD_PACKET_LENGTH + 1) = Allow for Null character at end inserted by snprintf 
-																				
-		uint16_t crc_calc = crc16_ccitt(version_string, (DD_PACKET_DATA_LENGTH + 2));        //calculate the checksum include STX and CMD
-				
-		snprintf(version_string, (DD_PACKET_LENGTH + 1), "?%c%c%c%c            %c@%04X\r", ip_address_type, VERSION_STR_CHAR_ARRAY[1], VERSION_STR_CHAR_ARRAY[3], VERSION_STR_CHAR_ARRAY[4], activeState, crc_calc);      	//PickOut Numbers x from VERSION STR Format VxRxx and Reconstruct the command string this time with the checksum (DD_PACKET_LENGTH + 1) = Allow for Null character at end inserted by snprintf 
-								
-		version = version_string;
-		
-		//std::cout << "VER PACKET OUT [" << version << "]" << std::endl;
-		
-		return true;		
-	}
-	
 	bool TestLogService::LoadNetworkConfigJSONFile(uint8_t ip_address_type, std::string& ip_address)
 	{
 	
 		try
 		{
 			std::string json_tag;
-			uint8_t activeState = ' ';
 			
 			// Load json file from current directory
 			std::ifstream jsonFile("/home/debian/QRFL_Network_Configuration.json", std::ios::in);
@@ -818,18 +659,21 @@ bool TestLogService::ParseCommand(std::string str)
 			switch (ip_address_type)
 			{							
 			case DD_PACKET_IPADDR_CMD:
-				json_tag = "IP_Configuration";				
+				json_tag = "IP_Configuration";
 				break;
 			case DD_PACKET_NETMASK_CMD:
-				json_tag = "Mask_Configuration";							
+				json_tag = "Mask_Configuration";			
 				break;
 			case DD_PACKET_GATEWAY_CMD:
-				json_tag = "Gateway_Configuration";								
+				json_tag = "Gateway_Configuration";				
 				break;
 			case DD_PACKET_NTPADDR_CMD:
-				json_tag = "NTP_Configuration";							
+				json_tag = "NTP_Configuration";			
 				break;
 			case DD_PACKET_DATETIME_CMD:
+				return false;
+				break;
+			case DD_PACKET_NETWORKSTATUS_CMD:
 				return false;
 				break;
 			default:
@@ -852,22 +696,12 @@ bool TestLogService::ParseCommand(std::string str)
 				ip[2] = ((ll >> 16) & 0xFF);
 				ip[1] = ((ll >> 8) & 0xFF);
 				ip[0] = (ll & 0xFF);
-												
-				activeState = '0';
-				if (m_NTP.m_NtpActive >= NTP_POLL_ACCEPTABLE_ONLINE_COUNT) 
-				{									
-					activeState |= DD_PACKET_NETWORKSTATUS_BYTE_NTPACTIVE;
-				}
-				if (m_PING.m_PingActive >= GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT) 
-				{									
-					activeState |= DD_PACKET_NETWORKSTATUS_BYTE_PINGACTIVE;
-				}
 				
-				snprintf(ipaddress_string, (DD_PACKET_LENGTH + 1), "?%c%03d%03d%03d%03d   %c\r", ip_address_type, (int) ip[3], (int) ip[2], (int) ip[1], (int) ip[0], activeState); 	// Construct the command string first without the check sum (DD_PACKET_LENGTH + 1) = Allow for Null character at end inserted by snprintf 
-																				
+				snprintf(ipaddress_string, (DD_PACKET_LENGTH + 1), "?%c%03d%03d%03d%03d    \r", ip_address_type, (int) ip[3], (int) ip[2], (int) ip[1], (int) ip[0]);	// Construct the command string first without the check sum (DD_PACKET_LENGTH + 1) = Allow for Null character at end inserted by snprintf 
+								
 				uint16_t crc_calc = crc16_ccitt(ipaddress_string, (DD_PACKET_DATA_LENGTH + 2));      //calculate the checksum include STX and CMD
 				
-				snprintf(ipaddress_string, (DD_PACKET_LENGTH + 1), "?%c%03d%03d%03d%03d   %c@%04X\r", ip_address_type, (int) ip[3], (int) ip[2], (int) ip[1], (int) ip[0], activeState, crc_calc);  	// Reconstruct the command string this time with the checksum (DD_PACKET_LENGTH + 1) = Allow for Null character at end inserted by snprintf 
+				snprintf(ipaddress_string, (DD_PACKET_LENGTH + 1), "?%c%03d%03d%03d%03d    @%04X\r", ip_address_type, (int) ip[3], (int) ip[2], (int) ip[1], (int) ip[0], crc_calc); 	// Reconstruct the command string this time with the checksum (DD_PACKET_LENGTH + 1) = Allow for Null character at end inserted by snprintf 
 								
 				ip_address = ipaddress_string;
 												
@@ -889,66 +723,6 @@ bool TestLogService::ParseCommand(std::string str)
 		
 		return true;
 	}
-	
-	bool TestLogService::GetDateTimeQRFLSynch(std::string& datetimeStr)
-	{
-		uint8_t activeState = ' ';
-
-		try
-		{
-			
-			time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-			tm* ptm = std::localtime(&t);
-			char datetime_string[DD_PACKET_LENGTH + 2];   //Allow for Null Characer at end plus a spare buye.
-			
-			activeState = '0';
-			if (m_NTP.m_NtpActive >= NTP_POLL_ACCEPTABLE_ONLINE_COUNT) 
-			{									
-				activeState |= DD_PACKET_NETWORKSTATUS_BYTE_NTPACTIVE;
-			}
-			if (m_PING.m_PingActive >= GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT) 
-			{									
-				activeState |= DD_PACKET_NETWORKSTATUS_BYTE_PINGACTIVE;
-			}
-			
-			datetime_string[0] = DD_PACKET_STX;
-			datetime_string[1] = DD_PACKET_DATETIME_CMD;
-			datetime_string[2] = ((ptm->tm_year - 100) / 10) + 0x30;    //need to subtract 100 as tm_years is num years since 1900
-			datetime_string[3] = ((ptm->tm_year - 100) % 10) + 0x30;     //need to subtract 100 as tm_years is num years since 1900	
-			datetime_string[4] = ((ptm->tm_mon + 1) / 10) + 0x30;   			//need to add 1 as tm_mon is 0 thru 11 and we need 1 thru 12
-			datetime_string[5] = ((ptm->tm_mon + 1) % 10) + 0x30;
-			datetime_string[6] = (ptm->tm_mday / 10) + 0x30;
-			datetime_string[7] = (ptm->tm_mday % 10) + 0x30;			    			
-			datetime_string[8] = (ptm->tm_hour / 10) + 0x30;
-			datetime_string[9] = (ptm->tm_hour % 10) + 0x30;
-			datetime_string[10] = (ptm->tm_min  / 10) + 0x30;
-			datetime_string[11] = (ptm->tm_min % 10) + 0x30;
-			datetime_string[12] = (ptm->tm_sec / 10) + 0x30;
-			datetime_string[13] = (ptm->tm_sec % 10) + 0x30;
-			datetime_string[14] = ' ';
-			datetime_string[15] = ' ';
-			datetime_string[16] = ' ';
-			datetime_string[17] = activeState;
-			datetime_string[18] = 0x00;
-			
-			uint16_t crc_calc = crc16_ccitt(datetime_string, (DD_PACKET_DATA_LENGTH + 2));        //calculate the checksum include STX and CMD
-				
-			snprintf(&datetime_string[(DD_PACKET_DATA_LENGTH + 2)], (DD_PACKET_CRC_LENGTH + 2), "@%04X\r", crc_calc);     			// Reconstruct the command string this time with the checksum (DD_PACKET_LENGTH + 1) = Allow for Null character at end inserted by snprintf 
-																				
-			datetimeStr = datetime_string;
-												
-			//std::cout << "PACKET OUT [" << datetimeStr << "]" << std::endl;
-																								
-		}
-		catch (const std::exception& ex)
-		{
-			std::cout << ex.what() << std::endl;
-			return false;
-		}    
-		
-		return true;
-	}
-	
 	
 	void TestLogService::stopTimer()
 {

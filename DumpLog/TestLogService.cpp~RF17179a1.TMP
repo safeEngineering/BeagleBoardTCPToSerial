@@ -726,7 +726,7 @@ bool TestLogService::ParseCommand(std::string str)
 			
 			if ((oldIPAddress == IP.to_string()) && (oldGatewayAddress == GATEWAY.to_string()) && (oldNetmaskAddress == NETMASK.to_string()) && (oldNTPServerAddress == NTPSERVER.to_string()))
 			{
-				//If there are two consecutive matches of any of the details of the Network Settings - Update the settings file and start the re-boot sequence
+				//If there are two consecutive Mismatches of any of the details of the Network Settings - Update the settings file and start the re-boot sequence
 				oldDetailsMatchCounter++;
 				std::cout << "SAME[" << IP.to_string() << "][MASK:" << NETMASK.to_string() << "][GWAY:" << GATEWAY.to_string() << "][NTP:" << NTPSERVER.to_string() << "]" << std::endl;											
 				if (oldDetailsMatchCounter == 2)	
@@ -741,19 +741,19 @@ bool TestLogService::ParseCommand(std::string str)
 					system("/home/debian/QRFL_Boot_Script.sh");	
 					oldIPAddress = "";
 					oldGatewayAddress = "";
-					oldNetmaskAddress = "";
-					oldNTPServerAddress = "";
+					oldGatewayAddress = "";
+					oldGatewayAddress = "";
 				}
 			}
 			else
 			{
-				//Settings Differ Start Again.
+				//Settings Differ Strt Again.
 				oldDetailsMatchCounter = 0;				
 				std::cout << "MISMATCH[" << IP.to_string() << "][MASK:" << NETMASK.to_string() << "][GWAY:" << GATEWAY.to_string() << "][NTP:" << NTPSERVER.to_string() << "]" << std::endl;																						
 				oldIPAddress = "";
 				oldGatewayAddress = "";
-				oldNetmaskAddress = "";
-				oldNTPServerAddress = "";
+				oldGatewayAddress = "";
+				oldGatewayAddress = "";
 			}
 																					
 		}

@@ -15,7 +15,7 @@
 #include <boost/array.hpp>
 #include <asio.hpp>
 
-#define NTP_POLL_INTERVAL           15
+#define NTP_POLL_INTERVAL           5
 #define NTP_POLL_ACCEPTABLE_ONLINE_COUNT   2
 #define NTP_POLL_MAX_ONLINE_COUNT 5
 
@@ -27,7 +27,8 @@ namespace SafeEngineering
         {
         public:
 	        NTP(asio::io_service& io, bool consoleDebug, const std::string& ntpIP)
-		        : m_NtpTimer(io)
+		        : m_ioService(io)
+		        , m_NtpTimer(io)
 		        , StdOutDebug(consoleDebug)
 		        , m_NtpResponseTimer(io)
 		        , m_NtpSocket(io, asio::ip::udp::v4())
@@ -45,7 +46,16 @@ namespace SafeEngineering
 	        ~NTP()
 	        {
 	        }
-            	        	        
+	        
+	        
+	        void SetIPAddress(std::string NTPIPAddress)	
+	        {
+		        asio::ip::udp::resolver resolNtp(m_ioService);
+		        asio::ip::udp::resolver::query queryNtp(asio::ip::udp::v4(), NTPIPAddress, "123");
+		        m_NtpEP = *resolNtp.resolve(queryNtp);
+		        m_NtpIP = NTPIPAddress;
+	        }
+	        
 			// Start periodially timer used to NTP
 	        void InitializeNTP()
 	        {	            
@@ -56,8 +66,25 @@ namespace SafeEngineering
 	        
 	        void StopNTP()
 	        {	            
-		        m_NtpTimer.cancel();
-		        m_NtpSocket.cancel();		        
+		        is_running = false;
+		        
+		        try
+		        {		      			        			       
+			        m_NtpSocket.cancel();
+		        }
+				catch (const std::exception& ex)
+				{
+					std::cerr << "STOP Socket NTP Error " <<  ex.what() << std::endl;
+		        }
+		        
+		        try
+		        {		      			       
+			        m_NtpTimer.cancel();
+		        }
+		        catch (const std::exception& ex)
+		        {
+			        std::cerr << "STOP Timer NTP Error " <<  ex.what() << std::endl;
+		        }
 	        }
             	                    	        
 			// Process periodically timer and start NTP Check
@@ -71,6 +98,8 @@ namespace SafeEngineering
 			        m_NtpSocket.close(ec);
 		        }
 		        
+		        if (!is_running) return;
+		        
 		        m_NtpSocket.open(asio::ip::udp::v4(), ec);
 		        if (ec)
 		        {
@@ -79,18 +108,23 @@ namespace SafeEngineering
 		        }
 		        else
 		        {	
-			        boost::array<unsigned char, 48> sendBuf = {010, 0, 0, 0, 0, 0, 0, 0, 0};
-			        
-			        std::string msg = "Sending Request to NTP :" + m_NtpIP;
-			        if (StdOutDebug) std::cout << msg << std::endl;
-			        spdlog::get("E23DataLog")->info() << msg;
+			        //boost::array<unsigned char, 48> sendBuf = {010, 0, 0, 0, 0, 0, 0, 0, 0};
 			        			        
-			        m_NtpSocket.send_to(asio::buffer(sendBuf), m_NtpEP);
+			        assert(sizeof(size_t) == 4);
+			        size_t sendBuf[12] = { 0 };
+			        const size_t BUFSIZE = sizeof(sendBuf);
+			        sendBuf[0] = htonl((3 << 27) | (3 << 24));      // s. RFC 4330     //sendBuf[0] = htonl((4 << 27) | (3 << 24));
+			        			        
+			        std::string msg = "Sending Request to NTP :" + m_NtpIP;
+			        if (StdOutDebug) std::cout << msg << " " <<  sendBuf[0] << std::endl;
+			        //spdlog::get("dump_data_log")->info() << msg;
+			        			        
+			        m_NtpSocket.send_to(asio::buffer(sendBuf, BUFSIZE), m_NtpEP);
 
 			        asio::ip::udp::endpoint sender_endpoint;
 			        
 			        // Wait up to five seconds for a reply.
-			        m_NtpTimer.expires_from_now(boost::posix_time::seconds(2));
+			        m_NtpTimer.expires_from_now(boost::posix_time::seconds(NTP_POLL_INTERVAL));
 			        m_NtpTimer.async_wait(boost::bind(&NTP::HandleNtpTimeout, this));
                 
 			        m_NtpRxValidPacket = false;
@@ -108,7 +142,7 @@ namespace SafeEngineering
 	        {
 	            		        
 		        m_NtpTimer.cancel();
-		        		        		        
+		        		        		        		        
 		        if (length == 48)  //Valid NTp Packet size
 		        {			        		        
 			        time_t secs = ntohl(m_NtpReplyBuffer[8]) - 2208988800u;
@@ -124,7 +158,7 @@ namespace SafeEngineering
 			        
 			        std::string msg = "Received reply from NTP " + m_NtpIP;
 			        if (StdOutDebug) std::cout << msg << std::endl;
-			        spdlog::get("E23DataLog")->info() << msg;
+			        //spdlog::get("dump_data_log")->info() << msg;
 			        
 			        if (StdOutDebug) std:: cout << z->tm_mday << '.' << z->tm_mon + 1 << '.'
 			                   << z->tm_year + 1900 << "   "
@@ -153,7 +187,10 @@ namespace SafeEngineering
 			        m_NtpSocket.close(ec);
 		        }
 		        
-		        InitializeNTP();  //Restart the Whole Sequence Again 		        
+		        if (is_running)
+		        {
+			        InitializeNTP();   //Restart the Whole Sequence Again  
+		        }		        		        
 	        }
             
 	        // Numbers of successful NTP commands
@@ -161,6 +198,8 @@ namespace SafeEngineering
 	        
 	        private:
 			 
+				asio::io_service& m_ioService;
+	        
 				 // NTP IP address
 				std::string m_NtpIP;
 				// Timer used to initiate NTP
@@ -177,6 +216,8 @@ namespace SafeEngineering
 				bool m_NtpRxValidPacket;
 	        
 				bool StdOutDebug = false;
+	        
+				bool is_running = true;
 	        	                                            
 			}
 			;  // NTP class

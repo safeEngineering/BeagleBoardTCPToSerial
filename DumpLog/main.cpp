@@ -11,11 +11,81 @@
 #include "DailyFileSink.h"
 #include "spdlog\spdlog.h"
 #include "Utils.hpp"
+#include "NTP.hpp"
 #include <cstdio>
 #include <iostream>
 #include <memory>
+#include <fstream>
+#include <json.hpp>
 
-#define VERSION_STR "V0.2"
+
+void Init()
+{
+	
+	nlohmann::json settingsjson =
+	{						
+		{ "IP_Configuration", "10.0.0.100" },
+		{ "Mask_Configuration", "255.255.255.0" },
+		{ "Gateway_Configuration", "10.0.0.138" },
+		{ "NTP_Configuration", "216.239.35.4" },
+		{ "DNS_Configuration", "8.8.8.8" }
+	};
+		
+	std::ofstream outfile("QRFL_Network_ConfigurationB.json");
+	outfile << settingsjson;
+	
+	nlohmann::json settingsjsonA =
+	{						
+		{ "IP", "10.0.0.100" },
+		{ "Mask", "255.255.255.0" },
+		{ "Gateway", "10.0.0.138" },
+		{ "NTP_IP", "216.239.35.4" },
+		{ "DNS", "8.8.8.8" }
+	};
+		
+	std::ofstream outfileA("QRFL_Network_SettingsB.json");
+	outfileA << settingsjsonA;
+}
+
+void Read()
+{
+	// Load json file from current directory
+	std::ifstream jsonFile("QRFL_Network_ConfigurationB.json");	
+	// JSON object
+	nlohmann::json settingsjson;
+	// Deserialize json object from text content
+		
+	jsonFile >> settingsjson;
+	
+		
+	auto value = settingsjson.find("Gateway_Configuration");
+	if (value != settingsjson.end()) 
+	{				
+		std::string ipaddress_str = value->get<std::string>();
+		asio::ip::address_v4 ipaddress = asio::ip::address_v4::from_string(ipaddress_str);				
+		char ipaddress_string[19 + 1];
+		ulong ll;
+		ulong ip[4];	
+		int i;
+				
+		ll = ipaddress.to_ulong();
+												
+		ip[3] = ((ll >> 24) & 0xFF);
+		ip[2] = ((ll >> 16) & 0xFF);
+		ip[1] = ((ll >> 8) & 0xFF);
+		ip[0] = (ll & 0xFF);
+				
+		snprintf(ipaddress_string, 19, "?%c%03d%03d%03d%03d    \r", 'B' , ip[3], ip[2], ip[1], ip[0]);	
+				
+		std::string ip_address = ipaddress_string;
+				
+		std::cout << "PACKET OUT " << ip_address << std::endl;
+												
+	}									
+}
+	
+	
+
 
 /************************************************************
  * main method
@@ -30,12 +100,7 @@ int main(int argc, char *argv[])
 	
 	std::string strLogPath = "/logs/web-app/public/log/";    
 	//std::string strLogPath = "/home/debian/web-app/public/log/";
-	if (aurizon::mkpath(strLogPath, 0744))
-    {
-        std::cerr << "Unable to create log path: " << strLogPath << std::endl;
-        return 1;
-    }
-
+	
     bool bStdOut = false;
     bool bStdErr = false;
     for (int i=1; i<argc; i++)
@@ -48,8 +113,21 @@ int main(int argc, char *argv[])
         {
             bStdErr = true;
         }
+	    else if (strcmp(argv[i], "-i") == 0)
+	    {
+		    bStdErr = true;
+		    Init();
+		    Read();
+		    return 0;
+	    }
     }
 	
+	if (aurizon::mkpath(strLogPath, 0744))
+	{
+		std::cerr << "Unable to create log path: " << strLogPath << std::endl;
+		return 1;
+	}
+			 	
 	SafeEngineering::Utils::Settings appSettings;
 	if (SafeEngineering::Utils::LoadSettings(appSettings) == false)
 	{

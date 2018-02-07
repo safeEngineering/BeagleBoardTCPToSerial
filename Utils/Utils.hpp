@@ -355,6 +355,13 @@ namespace SafeEngineering
                     if (index > (MAX_REMOTE_UNIT_NUMBERS - 1))
                         break;
                 }
+	            
+	            /*
+	            settingsjson["ntpserver_ipaddr"] = "0.0.0.1";	            	            
+	            std::ofstream file("key.json");
+	            file << settingsjson;
+	            */
+	            
             }
             catch(nlohmann::json::exception& ex)
             {
@@ -366,6 +373,9 @@ namespace SafeEngineering
                 std::cout << ex.what() << std::endl;
                 return false;
             }            
+	        
+	        
+	        
             return true;
         }
         

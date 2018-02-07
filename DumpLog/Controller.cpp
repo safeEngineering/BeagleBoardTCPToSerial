@@ -72,6 +72,7 @@ void Controller::shutdown()
     m_signalSet.cancel(errorCode);
     m_timer.cancel(errorCode);
     m_ptrTestLogService->stop();
+	m_ioService.stop();
 }
 
 void Controller::handleSignal(const std::error_code& ec, int signalNumber)
