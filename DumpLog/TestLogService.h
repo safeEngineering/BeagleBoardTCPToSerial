@@ -65,7 +65,7 @@ private:
 
     void addLog(const std::string& str);
 	
-	
+	bool SendBasicCommand(uint8_t command_type, std::string& command);
 	void ReadNTPandGatewayIPAddresses();
 	void CreateNetworkSettingsJSONFile();
 	void UpdateNetworkSettingsJSONFile(uint8_t ip_address_type, std::string ip_address);
@@ -111,6 +111,8 @@ private:
 	
 	double QRFLTimeDifference = 0;
 	double QRFLTimeDifferenceBlankOutCounter = 0;
+	
+	int16_t debugCounter = 0;
 	
 	uint16_t crc16_ccitt(const char *buf, int len);
 	

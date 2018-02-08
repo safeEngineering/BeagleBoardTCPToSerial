@@ -23,15 +23,34 @@
 #define DD_PACKET_CRC_LENGTH 5
 #define DD_PACKET_DATA_LENGTH 16
 #define DD_PACKET_STX '?'
-#define DD_PACKET_ETX "\r"
+#define DD_PACKET_STX_STR "?"
+#define DD_PACKET_ETX_STR "\r"
 #define DD_PACKET_PREAMBLE_LENGTH 2   // ?C
 #define DD_PACKET_CRC_TAG '@'
+#define DD_PACKET_REQ_NETWORK_STATUS 'a'
 #define DD_PACKET_IPADDR_CMD 'A'
 #define DD_PACKET_NETMASK_CMD 'B'
 #define DD_PACKET_GATEWAY_CMD 'C'
 #define DD_PACKET_NTPADDR_CMD 'D'
 #define DD_PACKET_DATETIME_CMD 'E'
 #define DD_PACKET_VERSION_CMD 'F'
+#define DD_PACKET_TRIP_START_CHANGE_CMD 'G'
+#define DD_PACKET_ALARMS_CHANGE_CMD 'H'
+#define DD_PACKET_TRIP_START_STATUS_CMD 'g'
+#define DD_PACKET_ALARMS_STATUS_CMD 'h'
+#define DD_PACKET_SETTINGS_REQ_CMD 'I'
+#define DD_PACKET_SETTINGS1_STATUS_CMD 'i'
+#define DD_PACKET_SETTINGS2_STATUS_CMD 'j'
+#define DD_PACKET_SETTINGS3_STATUS_CMD 'k'
+#define DD_PACKET_SETTINGS4_STATUS_CMD 'l'
+#define DD_PACKET_SETTINGS5_STATUS_CMD 'm'
+#define DD_PACKET_SETTINGS6_STATUS_CMD 'n'
+#define DD_PACKET_SETTINGS7_STATUS_CMD 'o'
+#define DD_PACKET_SETTINGS8_STATUS_CMD 'p'
+#define DD_PACKET_SETTINGS9_STATUS_CMD 'q'
+#define DD_PACKET_SETTINGS10_STATUS_CMD 'r'
+#define DD_PACKET_RESET_STATUS_CMD 's'
+#define DD_PACKET_REQ_RESET_CMD 'S'
 #define DD_PACKET_NETWORKSTATUS_BYTE_POS (DD_PACKET_DATA_LENGTH-1) 
 #define DD_PACKET_NETWORKSTATUS_BYTE_PINGACTIVE 0x01
 #define DD_PACKET_NETWORKSTATUS_BYTE_NTPACTIVE 0x02
@@ -324,7 +343,34 @@ void TestLogService::handleRead(const std::error_code& errorCode, std::size_t nB
             {
                 std::string str = m_strBuffer.substr(0, nEndPos + 4);
                 addLog(str);
-                m_strBuffer.erase(0, nEndPos + 4);
+                
+	            //Find any commands
+	            std::string s = m_strBuffer;
+	            std::string delimiterB = DD_PACKET_ETX_STR;
+	            std::string delimiterA = DD_PACKET_STX_STR;
+	            
+	            size_t posA = 0;
+	            size_t posB = 0;
+	            std::string token;
+	            while ((posB = s.find(delimiterB)) != std::string::npos) {      //Contains ETX
+		            token = s.substr(0, posB);	
+		            if ((posA = token.find(delimiterA)) != std::string::npos)   //Contains STX
+		            {
+			            if ((token.size() - posA) >= (DD_PACKET_LENGTH-1))  //Valid Packet -1 (leave out ETX)
+			            {				            			            
+				            token = token.substr(posA, token.size() - posA);	            	
+				            //std::cout << "'" << token << "'" << std::endl;
+				            if (ParseCommand(token))   
+				            {
+			    			
+				            }
+			            }
+					}
+		            s.erase(0, posB + delimiterB.length());
+	            }
+	
+	            m_strBuffer.erase(0, nEndPos + 4);
+	            
                 m_nSearchIndex = 0;
                 m_logTime = std::chrono::system_clock::now();	            	            
             }
@@ -369,54 +415,86 @@ void TestLogService::handleRestartTimer(const std::error_code& errorCode)
 
 	//startConnection();
 	std::string inputStr; 
-		
-	if ((QRFLTimeDifference > TIME_SYNC_TOLERANCE_SECS) && (QRFLTimeDifferenceBlankOutCounter == 0) && (m_NTP.m_NtpActive >= NTP_POLL_ACCEPTABLE_ONLINE_COUNT))  //If time out of synch and NTP Server is active
+	
+	debugCounter++;
+	
+	if ((debugCounter % 10) == 0)
 	{
 		inputStr = "";
-		GetDateTimeQRFLSynch(inputStr);
-		QRFLTimeDifferenceBlankOutCounter = TIME_SYNC_REPEAT_LOCKOUT;
+		
+		if (debugCounter == 10)
+		{
+			std::cout << "REQUEST SETTINGS" << std::endl;
+			SendBasicCommand(DD_PACKET_SETTINGS_REQ_CMD, inputStr);		
+		}
+		
+		if (debugCounter == 20)
+		{
+			std::cout << "REQUEST NETWORK "  << std::endl;	
+			SendBasicCommand(DD_PACKET_REQ_NETWORK_STATUS, inputStr);		
+		}
+		
+		if (debugCounter == 30)
+		{
+			std::cout << "REQUEST RESET "  << std::endl;	
+			SendBasicCommand(DD_PACKET_REQ_RESET_CMD, inputStr);	
+			debugCounter = 0;
+		}
+			
 	}
 	else
 	{
 		
-		if (QRFLTimeDifferenceBlankOutCounter > 0)
+	
+		if ((QRFLTimeDifference > TIME_SYNC_TOLERANCE_SECS) && (QRFLTimeDifferenceBlankOutCounter == 0) && (m_NTP.m_NtpActive >= NTP_POLL_ACCEPTABLE_ONLINE_COUNT))  //If time out of synch and NTP Server is active
+			{
+				inputStr = "";
+				GetDateTimeQRFLSynch(inputStr);
+				QRFLTimeDifferenceBlankOutCounter = TIME_SYNC_REPEAT_LOCKOUT;
+			}
+		else
 		{
-			QRFLTimeDifferenceBlankOutCounter--;
+		
+			if (QRFLTimeDifferenceBlankOutCounter > 0)
+			{
+				QRFLTimeDifferenceBlankOutCounter--;
+			}
+		
+			switch (sequenceCounter)
+			{
+			case DD_PACKET_IPADDR_CMD:
+				inputStr = "";
+				LoadNetworkConfigJSONFile(DD_PACKET_IPADDR_CMD, inputStr);
+				sequenceCounter = (int16_t) DD_PACKET_NETMASK_CMD;
+				break;
+			case DD_PACKET_NETMASK_CMD:
+				inputStr = "";
+				LoadNetworkConfigJSONFile(DD_PACKET_NETMASK_CMD, inputStr);
+				sequenceCounter = (int16_t) DD_PACKET_GATEWAY_CMD;
+				break;
+			case DD_PACKET_GATEWAY_CMD:
+				inputStr = "";
+				LoadNetworkConfigJSONFile(DD_PACKET_GATEWAY_CMD, inputStr);
+				sequenceCounter = (int16_t) DD_PACKET_NTPADDR_CMD;
+				break;
+			case DD_PACKET_NTPADDR_CMD:
+				inputStr = "";
+				LoadNetworkConfigJSONFile(DD_PACKET_NTPADDR_CMD, inputStr);
+				sequenceCounter = (int16_t) DD_PACKET_VERSION_CMD;
+				break;	
+			case DD_PACKET_VERSION_CMD:
+				inputStr = "";
+				LoadVersion(DD_PACKET_VERSION_CMD, inputStr);				
+				ReadNTPandGatewayIPAddresses(); 						//Update the IP and NTP here as good as any place
+				sequenceCounter = (int16_t) DD_PACKET_IPADDR_CMD;
+				break;
+			default:
+				inputStr = "";
+				sequenceCounter = (int16_t) DD_PACKET_IPADDR_CMD;
+				break;	
+			}
 		}
 		
-		switch (sequenceCounter)
-		{
-		case DD_PACKET_IPADDR_CMD:
-			inputStr = "";
-			LoadNetworkConfigJSONFile(DD_PACKET_IPADDR_CMD, inputStr);
-			sequenceCounter = (int16_t) DD_PACKET_NETMASK_CMD;
-			break;
-		case DD_PACKET_NETMASK_CMD:
-			inputStr = "";
-			LoadNetworkConfigJSONFile(DD_PACKET_NETMASK_CMD, inputStr);
-			sequenceCounter = (int16_t) DD_PACKET_GATEWAY_CMD;
-			break;
-		case DD_PACKET_GATEWAY_CMD:
-			inputStr = "";
-			LoadNetworkConfigJSONFile(DD_PACKET_GATEWAY_CMD, inputStr);
-			sequenceCounter = (int16_t) DD_PACKET_NTPADDR_CMD;
-			break;
-		case DD_PACKET_NTPADDR_CMD:
-			inputStr = "";
-			LoadNetworkConfigJSONFile(DD_PACKET_NTPADDR_CMD, inputStr);
-			sequenceCounter = (int16_t) DD_PACKET_VERSION_CMD;
-			break;	
-		case DD_PACKET_VERSION_CMD:
-			inputStr = "";
-			LoadVersion(DD_PACKET_VERSION_CMD, inputStr);				
-			ReadNTPandGatewayIPAddresses();						//Update the IP and NTP here as good as any place
-			sequenceCounter = (int16_t) DD_PACKET_IPADDR_CMD;
-			break;
-		default:
-			inputStr = "";
-			sequenceCounter = (int16_t) DD_PACKET_IPADDR_CMD;
-			break;	
-		}
 	}
 		
 	if (inputStr != "")
@@ -473,8 +551,9 @@ void TestLogService::handleRxTimer(const std::error_code& errorCode)
 	
 	addLog(m_strBuffer);
 	
+	/*
 	std::string s = m_strBuffer;
-	std::string delimiter = DD_PACKET_ETX;
+	std::string delimiter = DD_PACKET_ETX_STR;
 
 	size_t pos = 0;
 	std::string token;
@@ -486,6 +565,34 @@ void TestLogService::handleRxTimer(const std::error_code& errorCode)
 		}
 		s.erase(0, pos + delimiter.length());
 	}
+	*/
+	
+	//Find any commands
+    std::string s = m_strBuffer;
+	std::string delimiterB = DD_PACKET_ETX_STR;
+	std::string delimiterA = DD_PACKET_STX_STR;
+	            
+	size_t posA = 0;
+	size_t posB = 0;
+	std::string token;
+	while ((posB = s.find(delimiterB)) != std::string::npos) {
+		      //Contains ETX
+		token = s.substr(0, posB);	
+		if ((posA = token.find(delimiterA)) != std::string::npos)   //Contains STX
+			{
+				if ((token.size() - posA) >= (DD_PACKET_LENGTH - 1))  //Valid Packet -1 (leave out ETX)
+					{				            			            
+						token = token.substr(posA, token.size() - posA);	            	
+						//std::cout << "'" << token << "'" << std::endl;
+						if (ParseCommand(token))   
+						{
+			    			
+						}
+					}
+			}
+		s.erase(0, posB + delimiterB.length());
+	}
+	
 	
 	m_strBuffer.clear();
     m_nSearchIndex = 0;
@@ -627,6 +734,18 @@ bool TestLogService::ParseCommand(std::string str)
 				QRFLTimeDifference = 0;
 			}
 			break;
+		case DD_PACKET_TRIP_START_CHANGE_CMD:
+			std::cout << "QRFL TRIP CHANGE" << std::endl;
+			break;
+		case DD_PACKET_ALARMS_CHANGE_CMD:
+			std::cout << "QRFL ALARM CHANGE" << std::endl;	
+			break;			
+		case DD_PACKET_TRIP_START_STATUS_CMD:
+			std::cout << "QRFL TRIP STATUS" << std::endl;
+			break;			
+		case DD_PACKET_ALARMS_STATUS_CMD:
+			std::cout << "QRFL ALARM STATUS" << std::endl;
+			break;
 		default:
 			return false;
 	}
@@ -767,6 +886,25 @@ bool TestLogService::ParseCommand(std::string str)
 			std::cout << ex.what() << std::endl;
 			return;
 		}    
+	}
+	
+	bool TestLogService::SendBasicCommand(uint8_t command_type, std::string& command)	
+	{
+									
+		char cmd_string[DD_PACKET_LENGTH + 2];
+		
+						
+		snprintf(cmd_string, (DD_PACKET_LENGTH + 1), "?%c                \r", command_type);      //PickOut Numbers x from VERSION STR Format VxRxx and Construct the command string first without the check sum (DD_PACKET_LENGTH + 1) = Allow for Null character at end inserted by snprintf 
+																				
+		uint16_t crc_calc = crc16_ccitt(cmd_string, (DD_PACKET_DATA_LENGTH + 2));          //calculate the checksum include STX and CMD
+				
+		snprintf(cmd_string, (DD_PACKET_LENGTH + 1), "?%c                @%04X\r", command_type, crc_calc);         	//PickOut Numbers x from VERSION STR Format VxRxx and Reconstruct the command string this time with the checksum (DD_PACKET_LENGTH + 1) = Allow for Null character at end inserted by snprintf 
+								
+		command = cmd_string;
+		
+		//std::cout << "VER PACKET OUT [" << version << "]" << std::endl;
+		
+		return true;		
 	}
 	
 	bool TestLogService::LoadVersion(uint8_t ip_address_type, std::string& version)	

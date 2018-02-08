@@ -228,6 +228,13 @@ namespace SafeEngineering
             //nlohmann::json settingsjson = nlohmann::json::parse("{\"version\":\"1.0.0\",\"self_id\":0,\"units\":[{\"unit_type\":\"master\",\"unit_id\":0,\"unit_ipaddr\":\"192.168.1.1\"},{\"unit_type\":\"slave\",\"unit_id\":1,\"unit_ipaddr\":\"192.168.1.2\"}]}");
             int self_id_value, unit_id_value, index;
             std::string unit_type_value, unit_ipaddr_value;
+	        
+	        for (int i = 0; i < (int) settings.Units.size(); i++)
+	        {
+		        settings.Units[i].ID = i;
+		        settings.Units[i].IPAddress = "";
+		        settings.Units[i].Type = UnitType::UNUSED;
+	        }
             
             try
             { 
@@ -283,17 +290,25 @@ namespace SafeEngineering
                 }
                 
                 auto gateway_ip = settingsjson.find("gateway_ipaddr");
-                if(gateway_ip != settingsjson.end())
-                {
-                    settings.GatewayIPAddr = gateway_ip->get<std::string>();
-                    std::cout << "gateway_ipaddr: " << settings.GatewayIPAddr << std::endl;
-                }
+	            if (gateway_ip != settingsjson.end())
+	            {
+		            settings.GatewayIPAddr = gateway_ip->get<std::string>();
+		            std::cout << "gateway_ipaddr: " << settings.GatewayIPAddr << std::endl;
+	            }
+	            else
+	            {
+		            settings.GatewayIPAddr = "0.0.0.0";
+	            }
 	            
 	            auto ntpserver_ip = settingsjson.find("ntpserver_ipaddr");
 	            if (ntpserver_ip != settingsjson.end())
 	            {
 		            settings.NTPServerIPAddr = ntpserver_ip->get<std::string>();
 		            std::cout << "ntpserver_ipaddr: " << settings.NTPServerIPAddr << std::endl;
+	            }
+	            else
+	            {
+		            settings.NTPServerIPAddr = "0.0.0.0";
 	            }
 	                            
                 auto units = settingsjson.at("units");

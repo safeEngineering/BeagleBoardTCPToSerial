@@ -98,9 +98,9 @@ namespace SafeEngineering
                     // Initialize the termination signals
                     m_signalSet.async_wait(std::bind(&Serial::HandleSignal, this, std::placeholders::_1, std::placeholders::_2));
                     
-                    // Open the COM port
+	                // Open the COM port
                     m_serialPort.open("/dev/ttyS1");  // Name of COM/UART port ("COMx" on Windows or "/dev/ttySx" on Linux)
-                    // Set baud rate
+	                // Set baud rate
                     asio::serial_port_base::baud_rate baud(38400);
                     m_serialPort.set_option(baud);
                     // Set parity
@@ -126,11 +126,13 @@ namespace SafeEngineering
                     // Initialize GPIO_PIN_NAME pin as input pin
                     InitializeGPIOPin();
                     
+	                //Turn OFF PING AND NTP Check in this Service
+	                
                     // Initialize gateway ping operation
-                    InitializePing();
+                    //InitializePing();
 
 	                // Initialize NTP operation
-	                m_NTP.InitializeNTP();
+	                //m_NTP.InitializeNTP();
 	                
                 }
                 catch(std::exception& e)
@@ -662,7 +664,7 @@ namespace SafeEngineering
 									break;							
 							*/
 							default:
-									spdlog::get("E23DataLog")->info() << "PING ACTIVE (E6) : " << std::to_string(m_PingActive);
+									//spdlog::get("E23DataLog")->info() << "PING ACTIVE (E6) : " << std::to_string(m_PingActive);
 									if (m_PingActive < GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT)
 									{
 										m_loopbuffer[2] = 0x30;    // 0x30, 0x30 indictes offline			            
@@ -688,7 +690,7 @@ namespace SafeEngineering
 			        
 			        if (m_loopbuffer[1] == 0xE5) 
 			        {
-				        spdlog::get("E23DataLog")->info() << "PING ACTIVE (E5) : " << std::to_string(m_PingActive);                 				        
+				        //spdlog::get("E23DataLog")->info() << "PING ACTIVE (E5) : " << std::to_string(m_PingActive);                 				        
 				        if (m_PingActive < GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT)
 						{
 					        m_loopbuffer[2] = 0x30;   // 0x30, 0x30 indictes offline			            

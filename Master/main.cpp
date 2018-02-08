@@ -186,7 +186,8 @@ int main(int argc, char **argv)
 		    std::cout << "Master IP:" << appSettings.CurrentUnit.IPAddress << std::endl;
 		    std::cout << "SubMaster IP:" << appSettings.Units[8].IPAddress << std::endl;
 		    std::cout << "My IP:" << appSettings.CurrentUnit.IPAddress << std::endl;
-	        	    
+
+		    
 			// First, make a connection to submaster
 		    for (int i = 0; i < (int)appSettings.Units.size(); i++)
 		    {
@@ -195,6 +196,7 @@ int main(int argc, char **argv)
 			        // Construct TCP/IP object
 				    SafeEngineering::Comm::Connection::pointer new_connection = boost::shared_ptr<SafeEngineering::Comm::Connection>(new SafeEngineering::Comm::Connection(ios, serial1, debugConsoleOutput));                
 				    new_connection->Connect(appSettings.Units[i].IPAddress, 10001);
+				    std::cout << "Connecting:" << appSettings.Units[i].IPAddress << std::endl;
 			    }
 		    }
 
@@ -206,12 +208,13 @@ int main(int argc, char **argv)
 			        // Construct TCP/IP object
 				    SafeEngineering::Comm::Connection::pointer new_connection = boost::shared_ptr<SafeEngineering::Comm::Connection>(new SafeEngineering::Comm::Connection(ios, serial1, debugConsoleOutput));
 				    new_connection->Connect(appSettings.Units[i].IPAddress, 10001);
+				    std::cout << "Connecting:" << appSettings.Units[i].IPAddress << std::endl;
 				    //break;  // Now, we connect to one-only-one slave module
 			    }
 		    }
 		    
 		    //InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);
-        	    	    
+        	 	    
 			// Run the ASIO service
 		    try
 		    {	    	    
