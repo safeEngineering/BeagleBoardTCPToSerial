@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
 
         asio::io_service ioService;
 
-        aurizon::Controller controller(ioService);
+	    aurizon::Controller controller(ioService, bStdOut);
 
         controller.start();
 

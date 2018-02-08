@@ -64,20 +64,23 @@ namespace aurizon
 {
 
 std::shared_ptr<TestLogService> TestLogService::Instance(asio::io_service &ioService,
-            const std::string &strPort, uint32_t nBaud)
+		const std::string &strPort,
+		uint32_t nBaud,
+		bool consoleDebug)
 {
     class make_shared_enable : public TestLogService
     {
     public:
-        make_shared_enable(asio::io_service &ioService, const std::string &strPort, uint32_t nBaud) :
-            TestLogService(ioService, strPort, nBaud) {}
+        make_shared_enable(asio::io_service &ioService, const std::string &strPort, uint32_t nBaud, bool consoleDebug) :
+            TestLogService(ioService, strPort, nBaud, consoleDebug) {}
     };
-    return std::make_shared<make_shared_enable>(ioService, strPort, nBaud);
+	return std::make_shared<make_shared_enable>(ioService, strPort, nBaud, consoleDebug);
 }
 
-TestLogService::TestLogService(asio::io_service &ioService, const std::string &strPort, uint32_t nBaud) :
-        m_ioService(ioService), m_timer(ioService), r_timer(ioService), m_strPort(strPort), m_nBaud(nBaud), m_NTP(ioService, true, "8.8.8.8"), m_PING(ioService, true, "8.8.8.8")
+TestLogService::TestLogService(asio::io_service &ioService, const std::string &strPort, uint32_t nBaud, bool consoleDebug) :
+        m_ioService(ioService), m_timer(ioService), r_timer(ioService), m_strPort(strPort), m_nBaud(nBaud), m_NTP(ioService, consoleDebug, "8.8.8.8"), m_PING(ioService, consoleDebug, "8.8.8.8")
 {
+		StdOutDebug = consoleDebug;
 		sequenceCounter = (int16_t) DD_PACKET_IPADDR_CMD;
 		m_NTP.m_NtpActive = 0;
 		m_PING.m_PingActive = 0;			
@@ -500,7 +503,7 @@ void TestLogService::handleRestartTimer(const std::error_code& errorCode)
 	if (inputStr != "")
 	{			
 		auto self = shared_from_this();
-		std::cout << "Out Str - " << inputStr <<  std::endl;  
+		if (StdOutDebug) std::cout << "Out Str - " << inputStr <<  std::endl;  
 		m_ptrSerialPort->async_write_some(asio::buffer(inputStr, DD_PACKET_LENGTH),		                		                
 			[this, self](const std::error_code& errorCode, std::size_t nBytesReceived)
 			{
@@ -726,7 +729,7 @@ bool TestLogService::ParseCommand(std::string str)
 				
 				QRFLTimeDifference = difftime(systemTime, QRFLTime);
 				
-				std::cout << "QRFL TIME - " << date << "-" << month << "-" << year << " " << hr << ":" << min << ":" << sec <<  "{" << QRFLTimeDifference << "}" << std::endl;						
+				if (StdOutDebug) std::cout << "QRFL TIME - " << date << "-" << month << "-" << year << " " << hr << ":" << min << ":" << sec <<  "{" << QRFLTimeDifference << "}" << std::endl;						
 												
 			}
 			else
@@ -735,16 +738,16 @@ bool TestLogService::ParseCommand(std::string str)
 			}
 			break;
 		case DD_PACKET_TRIP_START_CHANGE_CMD:
-			std::cout << "QRFL TRIP CHANGE" << std::endl;
+			if (StdOutDebug) std::cout << "QRFL TRIP CHANGE" << std::endl;
 			break;
 		case DD_PACKET_ALARMS_CHANGE_CMD:
-			std::cout << "QRFL ALARM CHANGE" << std::endl;	
+			if (StdOutDebug) std::cout << "QRFL ALARM CHANGE" << std::endl;	
 			break;			
 		case DD_PACKET_TRIP_START_STATUS_CMD:
-			std::cout << "QRFL TRIP STATUS" << std::endl;
+			if (StdOutDebug) std::cout << "QRFL TRIP STATUS" << std::endl;
 			break;			
 		case DD_PACKET_ALARMS_STATUS_CMD:
-			std::cout << "QRFL ALARM STATUS" << std::endl;
+			if (StdOutDebug) std::cout << "QRFL ALARM STATUS" << std::endl;
 			break;
 		default:
 			return false;

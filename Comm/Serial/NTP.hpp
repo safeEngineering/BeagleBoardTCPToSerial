@@ -104,7 +104,8 @@ namespace SafeEngineering
 		        if (ec)
 		        {
 			        std::string msg = "NTP Socket Open Error ";
-			        std::cout << msg << std::endl;			            
+			        if (StdOutDebug) std::cout << msg << std::endl;		
+			        spdlog::get("dump_data_log")->info() << msg; 
 		        }
 		        else
 		        {	

@@ -21,7 +21,7 @@
 namespace aurizon
 {
 
-Controller::Controller(asio::io_service &ioService) :
+Controller::Controller(asio::io_service &ioService, bool consoleDebug) :
         m_ioService(ioService),m_timer(ioService),m_signalSet(ioService)
 {
     m_signalSet.add(SIGINT);
@@ -30,7 +30,7 @@ Controller::Controller(asio::io_service &ioService) :
 //    m_signalSet.add(SIGQUIT);
 //#endif
 
-	m_ptrTestLogService = TestLogService::Instance(ioService, "/dev/ttyS2", 57600);
+	m_ptrTestLogService = TestLogService::Instance(ioService, "/dev/ttyS2", 57600, consoleDebug);
 	
 }
 

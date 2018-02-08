@@ -26,7 +26,7 @@ class TestLogService : public std::enable_shared_from_this<TestLogService>
 {
 private:
     TestLogService(asio::io_service &ioService, const std::string &strPort,
-            uint32_t nBaud);
+		uint32_t nBaud, bool consoleDebug);
 
 public:
     TestLogService(const TestLogService&) = delete;
@@ -38,7 +38,9 @@ public:
     void stop();
 
     static std::shared_ptr<TestLogService> Instance(asio::io_service &ioService,
-            const std::string &strPort, uint32_t nBaud);
+		const std::string &strPort,
+		uint32_t nBaud,
+		bool consoleDebug);
 
 private:
     void startConnection();
@@ -111,6 +113,8 @@ private:
 	
 	double QRFLTimeDifference = 0;
 	double QRFLTimeDifferenceBlankOutCounter = 0;
+	
+	bool StdOutDebug = false;
 	
 	int16_t debugCounter = 0;
 	

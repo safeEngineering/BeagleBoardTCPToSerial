@@ -26,7 +26,7 @@ class TestLogService;
 class Controller
 {
 public:
-    Controller(asio::io_service &ioService);
+	Controller(asio::io_service &ioService, bool consoleDebug);
     virtual ~Controller();
 
     void start();
