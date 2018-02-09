@@ -129,7 +129,7 @@ void TestLogService::ReadNTPandGatewayIPAddresses()
 							
 				std::string ip_address = ipaddress_string;
 				
-				std::cout << "GATEWAY IP ADDRESS " << ip_address << std::endl;
+				//std::cout << "GATEWAY IP ADDRESS " << ip_address << std::endl;
 			
 				m_PING.SetIPAddress(ip_address);
 			}
@@ -162,7 +162,7 @@ void TestLogService::ReadNTPandGatewayIPAddresses()
 							
 				std::string ip_address = ipaddress_string;
 				
-				std::cout << "NTP IP ADDRESS " << ip_address << std::endl;
+				//std::cout << "NTP IP ADDRESS " << ip_address << std::endl;
 			
 				m_NTP.SetIPAddress(ip_address);	
 			}
