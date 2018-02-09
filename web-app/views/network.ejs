@@ -9,7 +9,7 @@
             color:#808080;
             font-weight: bold;
             padding: 6px;
-       	}
+        }
 
         label {
             display: inline-block;
@@ -17,22 +17,22 @@
             text-align: left;
         }
 
-	.rTable {
+  .rTable {
         border-collapse: collapse;
         border: 1px solid #808080;
         padding: 8px;
-  	    display: table;
+        display: table;
         color:#808080;
-	}
+  }
 
-	.rTableRow {
-  	    display: table-row;
+  .rTableRow {
+        display: table-row;
         border: 1px solid #808080;
         padding: 8px;
         color:#808080;
-	}
+  }
 
-	.rTableCell, .rTableHead {
+  .rTableCell, .rTableHead {
       font-family: arial, serif;
       color:#808080;
       display: table-cell;
@@ -41,7 +41,7 @@
       height: 25px;
       border: 1px solid #808080;
       padding: 8px;
-      color:#808080;    	
+      color:#808080;      
       }
 
   .rTableHead2 {
@@ -93,7 +93,9 @@
     <li><b><img src="/images/logo.png" height="30" width="120" href="website.html"></b></li>
     <li><a href="general">General</a></li>
     <li><a href="network">Network</a></li>
-    <li><a href="logs">Logs</a></li>
+    <li><a href="faultlogs">Fault Logs</a></li>
+    <li><a href="eventlogs">Event Logs</a></li>
+    <li><a href="logs">Raw Logs</a></li>
   </ul>
   <img src="/images/logo.png" height="60" width="250">
     <form method="post">
@@ -108,73 +110,85 @@
 
         <div class="rTableRow">
           <div class="rTableCell">
-	    <label for="ipaddress">IP Address </label>
+      <label for="ipaddress">IP Address </label>
           </div>
           <div class="rTableCell">
-	    <input type="text" id="ipaddress" name="ipaddress" value="<%= ipaddress %>" style="width:200px;">
-	  </div>
+      <label for="ipaddress"><%= ipaddress %> </label>
+<!--
+      <input type="text" id="ipaddress" name="ipaddress" value="<%= ipaddress %>" style="width:200px;">
+-->
+    </div>
         </div>
 
         <div class="rTableRow">
           <div class="rTableCell">
-	    <label for="subnet">Subnet </label>
+      <label for="subnet">Subnet </label>
           </div>
           <div class="rTableCell">
-  	    <input type="text" id="subnet" name="subnet" value="<%= subnet %>" style="width:200px;">
-   	  </div>
+      <label for="subnet"><%= subnet %> </label>
+<!--
+        <input type="text" id="subnet" name="subnet" value="<%= subnet %>" style="width:200px;">
+-->
+      </div>
         </div>
 
         <div class="rTableRow">
-	  <div class="rTableCell">
+    <div class="rTableCell">
             <label for="gateway">Gateway </label>
           </div>
-	  <div class="rTableCell">
+    <div class="rTableCell">
+            <label for="gateway"><%= gateway %> </label>
+<!--
             <input type="text" id="gateway" name="gateway" value="<%= gateway %>" style="width:200px;">
- 	  </div>
+-->
+    </div>
         </div>
-
+<!--
         <div class="rTableRow">
-	  <div class="rTableCell">
+    <div class="rTableCell">
             <label for="dns1">DNS1 </label>
-	  </div>
-	  <div class="rTableCell">
+    </div>
+    <div class="rTableCell">
             <input type="text" id="dns1" name="dns1" value="<%= dns1 %>" style="width:200px;">
-	  </div>
+    </div>
         </div>
 
         <div class="rTableRow">
-	  <div class="rTableCell">
+    <div class="rTableCell">
             <label for="dns2">DNS2 </label>
-	  </div>
-	  <div class="rTableCell">
+    </div>
+    <div class="rTableCell">
             <input type="text" id="dns2" name="dns2" value="<%= dns2 %>" style="width:200px;">
-	  </div>
+    </div>
         </div>
 
         <div class="rTableRow">
-	  <div class="rTableCell">
+    <div class="rTableCell">
             <label for="port">Connection Port </label>
-	  </div>
-	  <div class="rTableCell">
+    </div>
+    <div class="rTableCell">
             <input type="text" id="port" name="port" value="<%= port %>" style="width:200px;">
-	  </div>
+    </div>
         </div>
 
         <div class="rTableRow">
-	  <div class="rTableCell">
+    <div class="rTableCell">
             <label for="interval">Ping Interval (ms) </label>
-	  </div>
-	  <div class="rTableCell">
+    </div>
+    <div class="rTableCell">
             <input type="text" id="interval" name="interval" value="<%= interval %>" style="width:200px;">
-	  </div>
+    </div>
         </div>
-
+-->
         <div class="rTableRow">
           <div class="rTableCell">
-            <label for="ntpservers">NTP Servers</label>
+            <label for="ntpservers">NTP Server</label>
           </div>
           <div class="rTableCell">
+            <label for="ntpservers"><%= ntpservers %></label>
+<!--
             <input type="text" id="ntpservers" name="ntpservers" value="<%= ntpservers %>" style="width:200px;">
+-->
           </div>
         </div>
       </div>
@@ -185,21 +199,21 @@
       <div class="rTable">
         <div class="rTableRow">
           <div class="rTableHead2"><strong>Unit ID</strong></div>
-	  <div class="rTableHead2"><span style="font-weight: bold;">Enabled</span></div>
+    <div class="rTableHead2"><span style="font-weight: bold;">Enabled</span></div>
           <div class="rTableHead2"><span style="font-weight: bold;">Address</span></div>
         </div>
 
         <div class="rTableRow">
           <div class="rTableCell">
             <label for="check0" style="width:100px">0 (Master)</label>
-	  </div>
+    </div>
           <div class="rTableCell">
             <input type="checkbox" id="check0" name="check0" <%= enable0 == 'true' ? 'checked' : ''%> 
             <style="width:60px;text-align:center;">
-	  </div>
+    </div>
           <div class="rTableCell">
             <input type="text" id="unit0" name="unit0" value="<%= unit0 %>" style="width:200px;">
-	  </div>
+    </div>
         </div>
 
         <div class="rTableRow">
@@ -317,3 +331,4 @@
     </form>
   </body>
 </html>
+

@@ -419,7 +419,7 @@ void TestLogService::handleRestartTimer(const std::error_code& errorCode)
 	//startConnection();
 	std::string inputStr; 
 	
-	debugCounter++;
+	//debugCounter++;     //Include this line to force debug actions below.
 	
 	if ((debugCounter % 10) == 0)
 	{

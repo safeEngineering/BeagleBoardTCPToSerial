@@ -116,7 +116,7 @@ private:
 	
 	bool StdOutDebug = false;
 	
-	int16_t debugCounter = 0;
+	int16_t debugCounter = 1;		//Temporary Variable to make command sequences happen for testing
 	
 	uint16_t crc16_ccitt(const char *buf, int len);
 	

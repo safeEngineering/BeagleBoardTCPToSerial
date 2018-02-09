@@ -38,6 +38,54 @@ router.get('/logs', function(req, res, next) {
 
 });
 
+/* Add route for faultlogs page */
+router.get('/faultlogs', function(req, res, next) {
+ 
+   var logFiles = [];
+   var subArray = null;
+      
+  fs.readdir('/logs/web-app/public/log', function(err,files) {
+    if (err) {
+      res.render('error', { message: err });
+    } else {
+      files.sort();
+      /* console.log(files);  */
+      var index = 0;
+      for (index = 0; index < files.length; index++) {
+        logFiles.push(files[index]);
+      }
+      
+      //console.log(logFiles); 
+
+      res.render('faultlogs', {logFiles:logFiles});
+    }
+  });
+
+});
+
+/* Add route for eventlogs page */
+router.get('/eventlogs', function(req, res, next) {
+
+   var logFiles = [];
+   var subArray = null;
+      
+  fs.readdir('/logs/web-app/public/log', function(err,files) {
+    if (err) {
+      res.render('error', { message: err });
+    } else {
+      files.sort();
+      var index = 0;
+      for (index = 0; index < files.length; index++) {
+        logFiles.push(files[index]);
+      }
+      
+      //console.log(logFiles); 
+
+      res.render('eventlogs', {logFiles:logFiles});
+    }
+  });
+
+});
 
 /* Add route for general page */
 router.get('/general', function(req, res, next) {
@@ -170,11 +218,11 @@ router.post('/network', function(req, res, next) {
   //console.log(req.body);
 
   /* Check fields */
-  req.checkBody('ipaddress', 'IP address format required').isIP();
-  req.checkBody('subnet', 'IP address format required').isIP();
-  req.checkBody('gateway', 'IP address format required').isIP();
-  req.checkBody('dns1', 'IP address format required').isIP();
-  req.checkBody('dns2', 'IP address format required').isIP();
+  //req.checkBody('ipaddress', 'IP address format required').isIP();
+  //req.checkBody('subnet', 'IP address format required').isIP();
+  //req.checkBody('gateway', 'IP address format required').isIP();
+  //req.checkBody('dns1', 'IP address format required').isIP();
+  //req.checkBody('dns2', 'IP address format required').isIP();
   req.checkBody('unit0', 'IP address format required').isIP();
 
   // Run the validators
@@ -251,7 +299,7 @@ router.post('/network', function(req, res, next) {
       /////////////////////////////////////////////////////////////////////////////////////////////
       // Update NTP Servers
       /////////////////////////////////////////////////////////////////////////////////////////////
-
+      /*
       // First, get current NTP servers from configuration file of systemd-timesyncd
       var ntpConfig = fs.readFileSync('/etc/systemd/timesyncd.conf', 'utf8');
       var lines = ntpConfig.split('\n');
@@ -264,7 +312,7 @@ router.post('/network', function(req, res, next) {
       }
       // Write new string array to file
       fs.writeFileSync('/etc/systemd/timesyncd.conf', lines.join('\n'));
-
+      */
 
       /////////////////////////////////////////////////////////////////////////////////////////////
       // Update JSON/Text file
@@ -341,7 +389,7 @@ router.post('/network', function(req, res, next) {
       //
       // Update network settings
       // 
-
+      /*
       // Get name of cable ethernet resource. It can return many resources. Some of them were invalid !!!!!!!!!!!!!!!! 
       var ethResourceDir = shell.ls('/var/lib/connman');
       //console.log(ethResourceDir[0]);
@@ -381,7 +429,7 @@ router.post('/network', function(req, res, next) {
           }
         }
       }
-
+      */
       res.render('success', { message : 'Network settings have updated!' });
     }
   });
@@ -393,3 +441,4 @@ router.get('/', function(req, res, next) {
 });
 
 module.exports = router;
+
