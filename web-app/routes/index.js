@@ -386,6 +386,8 @@ router.post('/network', function(req, res, next) {
       var newJsonString = JSON.stringify(jsonObj, null, 2);
       fs.writeFileSync('../bridge-app/settings.json', newJsonString);
 
+      var result1 = shell.exec("sudo ../QRFL_Restart_Services.sh", {silent:true});
+ 
       //
       // Update network settings
       // 
@@ -441,4 +443,5 @@ router.get('/', function(req, res, next) {
 });
 
 module.exports = router;
+
 
