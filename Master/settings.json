@@ -3,13 +3,11 @@
   "site_name": "RAGLAN FS",
   "serial_number": "12345678",
   "self_id": 0,
-  "gateway_ipaddr": "10.10.1.1",
-  "ntpserver_ipaddr": "10.10.1.1",
   "units": [
     {
       "unit_type": "master",
       "unit_id": 0,
-      "unit_ipaddr": "10.10.1.165"
+      "unit_ipaddr": "10.0.0.100"
     },
     {
       "unit_type": "slave",
@@ -19,7 +17,7 @@
     {
       "unit_type": "unused",
       "unit_id": 2,
-      "unit_ipaddr": "192.168.1.3"
+      "unit_ipaddr": "192.168.1.195"
     },
     {
       "unit_type": "unused",
@@ -58,4 +56,3 @@
     }
   ]
 }
-
