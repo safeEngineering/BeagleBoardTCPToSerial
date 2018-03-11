@@ -44,7 +44,7 @@ router.get('/faultlogs', function(req, res, next) {
    var logFiles = [];
    var subArray = null;
       
-  fs.readdir('/logs/web-app/public/log', function(err,files) {
+  fs.readdir('/logs/web-app/public/faultlogs', function(err,files) {
     if (err) {
       res.render('error', { message: err });
     } else {
@@ -69,7 +69,7 @@ router.get('/eventlogs', function(req, res, next) {
    var logFiles = [];
    var subArray = null;
       
-  fs.readdir('/logs/web-app/public/log', function(err,files) {
+  fs.readdir('/logs/web-app/public/eventlogs', function(err,files) {
     if (err) {
       res.render('error', { message: err });
     } else {
@@ -92,11 +92,36 @@ router.get('/general', function(req, res, next) {
   // Read data from json file
   var jsonString = fs.readFileSync('../bridge-app/settings.json'); 
   var jsonObj = JSON.parse(jsonString);
+  var jsonStringpara = fs.readFileSync('../bridge-app/parameters.json');
+  var jsonObjpara = JSON.parse(jsonStringpara);
+
+  var dateTimeNow = new Date();
   //console.log(jsonObj);
 
   res.render('general', { unit: jsonObj.self_id,
                           site: jsonObj.site_name,
                           serial: jsonObj.serial_number,
+						  localBoardTime: dateTimeNow,
+                          dcfilter: (jsonObjpara.parameters1[0].dc_filter == "on" ? 'true' : 'false'),
+			  extrtu: (jsonObjpara.parameters1[0].ext_rtu == "on" ? 'true' : 'false'),
+			  mode: jsonObjpara.parameters1[0].mode,
+			  v23: (jsonObjpara.parameters1[0].v23 == "on" ? 'true' : 'false'),
+			  log: (jsonObjpara.parameters1[0].log == "on" ? 'true' : 'false'),
+			  vtdetect: (jsonObjpara.parameters1[0].vt_detect == "on" ? 'true' : 'false'),
+			  itdetect: (jsonObjpara.parameters1[0].it_detect == "on" ? 'true' : 'false'),
+			  rtutimeout: jsonObjpara.parameters2[0].rtu_time_out,
+			  ampslogthld: jsonObjpara.parameters2[0].amps_log_thld,
+			  rtulimit: jsonObjpara.parameters2[0].rtu_limit,
+			  mdmlimit: jsonObjpara.parameters2[0].mdm_limit,
+			  vtthld: jsonObjpara.parameters2[0].vt_thld,
+			  itthld: jsonObjpara.parameters2[0].it_thld,
+			  bslength: jsonObjpara.parameters2[0].bs_length,
+			  sleeptime: jsonObjpara.parameters2[0].sleep_time,
+			  clrwait: jsonObjpara.parameters2[0].clr_wait,
+			  qtime: jsonObjpara.parameters2[0].q_time,
+			  isrtime: jsonObjpara.parameters2[0].isr_time,
+			  rxgain: jsonObjpara.parameters3[0].rx_gain,
+			  txgain: jsonObjpara.parameters3[0].tx_gain,
 		          alarm: 'mk1',
                           logmode: 'normal',
 		          commmode: 'ethernet' });
@@ -387,7 +412,7 @@ router.post('/network', function(req, res, next) {
       fs.writeFileSync('../bridge-app/settings.json', newJsonString);
 
       var result1 = shell.exec("sudo ../QRFL_Restart_Services.sh", {silent:true});
- 
+
       //
       // Update network settings
       // 

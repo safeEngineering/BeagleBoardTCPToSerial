@@ -62,7 +62,7 @@
         padding: 0;
         width: 150px;
         background-color: #808080;
-        height:1125px;
+        height:1675px;
     }
 
     li a {
@@ -146,6 +146,271 @@
           </div>
         </div>
 
+                <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="time">Time</label>
+          </div>
+          <div class="rTableCell">
+      	  <label for="time"><%= localBoardTime %></label>
+          </div>
+        </div>
+        </div>
+      
+      <div style="padding:6px;">
+        <input type="submit" value="Submit">
+      </div>
+
+      <br></br>
+      <div class="general_caption">Parameters 1</div>
+      <p></p>
+      <div class="rTable">
+        <div class="rTableRow">
+          <div class="rTableHead2"><strong>Name</strong></div>
+          <div class="rTableHead2"><span style="font-weight: bold;">Value</span></div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell" >
+      <label for="dcfilter">DC Filter</label>
+          </div>
+    <div class="rTableCell">
+      <input type="checkbox" id="check1" name="check1" onclick="return false" <%= dcfilter == 'true' ? 'checked' : ''%> <style="width:60px;text-align:center;">          
+        </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="extRTU">Ext RTU</label>
+          </div>
+          <div class="rTableCell">
+      <input type="checkbox" id="check2" name="check2" onclick="return false" <%= extrtu == 'true' ? 'checked' : ''%> <style="width:60px;text-align:center;">          
+          </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="Mode">Mode</label>
+          </div>
+          <div class="rTableCell">
+      <label for="Mode"><%= mode%></label>
+          </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="v23">V23</label>
+          </div>
+          <div class="rTableCell">
+      <input type="checkbox" id="check3" name="check3" onclick="return false" <%= v23 == 'true' ? 'checked' : ''%> <style="width:60px;text-align:center;">          
+          </div>
+        </div>
+
+                <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="Log">Log</label>
+          </div>
+          <div class="rTableCell">
+      <input type="checkbox" id="check4" name="check4" onclick="return false" <%= log == 'true' ? 'checked' : ''%> <style="width:60px;text-align:center;">          
+          </div>
+        </div>
+
+                <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="vtdetect">VT Detect</label>
+          </div>
+          <div class="rTableCell">
+      <input type="checkbox" id="check5" name="check5" onclick="return false" <%= vtdetect == 'true' ? 'checked' : ''%> <style="width:60px;text-align:center;">          
+           </div>
+        </div>
+
+                <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="itdetect">IT Detect</label>
+          </div>
+          <div class="rTableCell">
+      <input type="checkbox" id="check6" name="check6" onclick="return false" <%= itdetect == 'true' ? 'checked' : ''%> <style="width:60px;text-align:center;">          
+          </div>
+        </div>
+
+        </div>
+
+<br></br>
+      <div class="general_caption">Parameters 2</div>
+      <p></p>
+      <div class="rTable">
+        <div class="rTableRow">
+          <div class="rTableHead2"><strong>Name</strong></div>
+          <div class="rTableHead2"><span style="font-weight: bold;">Value</span></div>
+          <div class="rTableHead2"><span style="font-weight: bold;">Unit</span></div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell" >
+      <label for="rtutimeout">RTU Time Out</label>
+          </div>
+    <div class="rTableCell">
+      <label for="rtutimeout"><%= rtutimeout%></label>      
+          </div>
+    <div class="rTableCell">
+	secs
+        </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="ampslogthld">Amps Log Thld</label>
+          </div>
+          <div class="rTableCell">
+      <label for="ampslogthld"><%= ampslogthld%></label>      
+          </div>
+    <div class="rTableCell">
+	amps
+        </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="rtulimit">RTU Limit</label>
+          </div>
+          <div class="rTableCell">
+      <label for="rtulimit"><%= rtulimit%></label>      
+          </div>
+    <div class="rTableCell">
+	N/A
+        </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="mdmlimit">MDM Limit</label>
+          </div>
+          <div class="rTableCell">
+      <label for="mdmlimit"><%= mdmlimit%></label>      
+          </div>
+    <div class="rTableCell">
+	N/A
+        </div>
+        </div>
+
+                <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="vtthld">VT Thld</label>
+          </div>
+          <div class="rTableCell">
+      <label for="vtthld"><%= vtthld%></label>      
+          </div>
+    <div class="rTableCell">
+	mV
+        </div>
+        </div>
+
+                <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="itthld">IT Thld</label>
+          </div>
+          <div class="rTableCell">
+      <label for="itthld"><%= itthld%></label>      
+          </div>
+    <div class="rTableCell">
+	A/Cycle
+        </div>
+        </div>
+
+                <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="bslength">BS Length</label>
+          </div>
+          <div class="rTableCell">
+      <label for="bslength"><%= bslength%></label>      
+          </div>
+    <div class="rTableCell">
+	samples
+        </div>
+        </div>
+
+                <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="sleeptime">Sleep Time</label>
+          </div>
+          <div class="rTableCell">
+      <label for="sleeptime"><%= sleeptime%></label>      
+          </div>
+    <div class="rTableCell">
+	mins
+        </div>
+        </div>
+
+                        <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="clrwait">CLR Wait</label>
+          </div>
+          <div class="rTableCell">
+      <label for="clrwait"><%= clrwait%></label>      
+          </div>
+    <div class="rTableCell">
+	secs
+        </div>
+        </div>
+
+                        <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="qtime">Q Time</label>
+          </div>
+          <div class="rTableCell">
+      <label for="qtime"><%= qtime%></label>      
+          </div>
+    <div class="rTableCell">
+	secs
+        </div>
+        </div>
+
+                        <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="isrtime">ISR Time</label>
+          </div>
+          <div class="rTableCell">
+      <label for="isrtime"><%= isrtime%></label>      
+          </div>
+    <div class="rTableCell">
+	secs
+        </div>
+        </div>
+        </div>
+
+        <br></br>
+      <div class="general_caption">Parameters 3</div>
+      <p></p>
+      <div class="rTable">
+        <div class="rTableRow">
+          <div class="rTableHead2"><strong>Name</strong></div>
+          <div class="rTableHead2"><span style="font-weight: bold;">Value</span></div>
+          <div class="rTableHead2"><span style="font-weight: bold;">Unit</span></div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell" >
+      <label for="rxgain">RX Gain</label>
+          </div>
+    <div class="rTableCell">
+      <label for="rxgain"><%= rxgain%></label>      
+          </div>
+    <div class="rTableCell">
+	dBm
+        </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="txgain">TX Gain</label>
+          </div>
+          <div class="rTableCell">
+      <label for="txgain"><%= txgain%></label>      
+          </div>
+    <div class="rTableCell">
+	dBm
+        </div>
+        </div>
+        </div>
 <!--
         <div class="rTableRow">
           <div class="rTableCell">
@@ -183,11 +448,8 @@
           </div>
   </div>
 -->
-      </div>
       
-      <div style="padding:6px;">
-        <input type="submit" value="Submit">
-      </div>
+
    </form>
 </body>
 

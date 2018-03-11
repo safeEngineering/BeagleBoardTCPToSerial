@@ -99,6 +99,8 @@ int main(int argc, char *argv[])
 	std::cout << "START QRFL DATA DUMP LOG " << VERSION_STR << std::endl;
 	
 	std::string strLogPath = "/logs/web-app/public/log/";    
+	std::string strLogPathEventLog = "/logs/web-app/public/eventlogs/";   
+	std::string strLogPathFaultLog = "/logs/web-app/public/faultlogs/";   
 	//std::string strLogPath = "/home/debian/web-app/public/log/";
 	
     bool bStdOut = false;
@@ -127,6 +129,18 @@ int main(int argc, char *argv[])
 		std::cerr << "Unable to create log path: " << strLogPath << std::endl;
 		return 1;
 	}
+	
+	if (aurizon::mkpath(strLogPathEventLog, 0744))
+	{
+		std::cerr << "Unable to create event log path: " << strLogPath << std::endl;
+		return 1;
+	}
+	
+	if (aurizon::mkpath(strLogPathFaultLog, 0744))
+	{
+		std::cerr << "Unable to create fault log path: " << strLogPath << std::endl;
+		return 1;
+	}
 			 	
 	SafeEngineering::Utils::Settings appSettings;
 	if (SafeEngineering::Utils::LoadSettings(appSettings) == false)
@@ -148,22 +162,40 @@ int main(int argc, char *argv[])
     {
         sinks.push_back(std::make_shared<spdlog::sinks::stderr_sink_st>());
     }
+	
 	sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(strLogPath + "DebugStatusLog-" + appSettings.SiteName, "txt", 32 * 1024, 3, false));
     auto log = spdlog::create("status_log", begin(sinks), end(sinks));
     log->set_pattern("[%d-%m-%Y %H:%M:%S.%e] [%l] %v");
     // FIXME: level should be err normally
 	log->set_level(spdlog::level::info);
 	
-
     std::vector<spdlog::sink_ptr> test_sinks;
 	test_sinks.push_back(std::make_shared<aurizon::DailyFileSink_st>(strLogPath, "DebugDataLog-" + appSettings.SiteName, "txt", 40, false));
     auto test_log = spdlog::create("dump_data_log", begin(test_sinks), end(test_sinks));
     test_log->set_pattern("%v");
+	
+	std::vector<spdlog::sink_ptr> event_sinks;
+	event_sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(strLogPathEventLog + "Events-" + appSettings.SiteName, "txt", 2 * 1024, 3, false));
+	auto event_log = spdlog::create("event_log", begin(event_sinks), end(event_sinks));
+	event_log->set_pattern("[%d/%m/%Y %H:%M:%S] ,%v");
+	// FIXME: level should be err normally
+	event_log->set_level(spdlog::level::info);
+	
+	std::vector<spdlog::sink_ptr> fault_sinks;
+	fault_sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(strLogPathFaultLog + "Faults-" + appSettings.SiteName, "txt", 4 * 1024, 3, false));
+	auto fault_log = spdlog::create("fault_log", begin(fault_sinks), end(fault_sinks));
+	fault_log->set_pattern("[%d/%m/%Y %H:%M:%S] ,%v");	
+	// FIXME: level should be err normally
+	fault_log->set_level(spdlog::level::info);
 
     while (true)
     {
         log->info() << "Starting QRFL Data Dump Log [" << VERSION_STR << "]";
+	    
+	    spdlog::get("event_log")->notice() << "QRFL_DATE,QRFL_TIME,START_IP,TRIP_X,TRIP_Y,OIL_SURGE_TRIP,OIL_TEMPERATURE_TRIP,WINDING_TEMPERATURE_TRIP,PRESSUREREL_TRIP,SPARE1_TRIP,SPARE2_TRIP,RESERVED,RESERVED,RESERVED,RESERVED,RESERVED,RESERVED,RESERVED,SPARE1_ALARM,BATTERY_CHARGER_ALARM,BAG_RUPTURE_ALARM,OIL_TEMPERATURE_ALARM,GAS_ALARM,ALARM_W,ALARM_V,RESERVED,RESERVED,RESERVED,RESERVED,RESERVED,RESERVED,RESERVED,RESERVED,RESERVED";
+	    spdlog::get("fault_log")->notice() << "QRFL_DATE,QRFL_TIME,SUM FAULT CURRENTS 512 POINTS";
 
+			    
         asio::io_service ioService;
 
 	    aurizon::Controller controller(ioService, bStdOut);
@@ -198,6 +230,9 @@ int main(int argc, char *argv[])
 
         log->flush();
         test_log->flush();
+	    event_log->flush();
+	    fault_log->flush();
+        
         sync();
 
         if (hasError)

@@ -17,6 +17,47 @@
 #include <memory>
 #include <string>
 
+//Packet Format ?C123456789012   N@XXXX\r
+#define DD_PACKET_CRC_LENGTH 5
+#define DD_PACKET_DATA_LENGTH 16
+#define DD_PACKET_STX '?'
+#define DD_PACKET_STX_STR "?"
+#define DD_PACKET_ETX_STR "\r"
+#define DD_PACKET_PREAMBLE_LENGTH 2   // ?C
+#define DD_PACKET_CRC_TAG '@'
+#define DD_PACKET_REQ_NETWORK_STATUS 'a'
+#define DD_PACKET_IPADDR_CMD 'A'
+#define DD_PACKET_NETMASK_CMD 'B'
+#define DD_PACKET_GATEWAY_CMD 'C'
+#define DD_PACKET_NTPADDR_CMD 'D'
+#define DD_PACKET_DATETIME_CMD 'E'
+#define DD_PACKET_VERSION_CMD 'F'
+#define DD_PACKET_TRIP_START_CHANGE_CMD 'G'
+#define DD_PACKET_ALARMS_CHANGE_CMD 'H'
+#define DD_PACKET_TRIP_START_STATUS_CMD 'g'
+#define DD_PACKET_ALARMS_STATUS_CMD 'h'
+#define DD_PACKET_SETTINGS_REQ_CMD 'I'
+#define DD_PACKET_SETTINGS1_STATUS_CMD 'i'
+#define DD_PACKET_SETTINGS2_STATUS_CMD 'j'
+#define DD_PACKET_SETTINGS3_STATUS_CMD 'k'
+#define DD_PACKET_SETTINGS4_STATUS_CMD 'l'
+#define DD_PACKET_SETTINGS5_STATUS_CMD 'm'
+#define DD_PACKET_SETTINGS6_STATUS_CMD 'n'
+#define DD_PACKET_SETTINGS7_STATUS_CMD 'o'
+#define DD_PACKET_SETTINGS8_STATUS_CMD 'p'
+#define DD_PACKET_SETTINGS9_STATUS_CMD 'q'
+#define DD_PACKET_SETTINGS10_STATUS_CMD 'r'
+#define DD_PACKET_RESET_STATUS_CMD 's'
+#define DD_PACKET_REQ_RESET_CMD 'S'
+#define MAX_NUM_SETTING_COMMANDS 10
+#define DD_PACKET_NETWORKSTATUS_BYTE_POS (DD_PACKET_DATA_LENGTH-1) 
+#define DD_PACKET_NETWORKSTATUS_BYTE_PINGACTIVE 0x01
+#define DD_PACKET_NETWORKSTATUS_BYTE_NTPACTIVE 0x02
+#define DD_PACKET_LENGTH (DD_PACKET_DATA_LENGTH+3+DD_PACKET_CRC_LENGTH)   //STX, CMD, DATA, CRC, ETX  
+
+#define TIME_SYNC_TOLERANCE_SECS 5
+#define TIME_SYNC_REPEAT_LOCKOUT  5
+
 namespace aurizon
 {
 
@@ -63,7 +104,11 @@ private:
 	
 	std::string ReplaceAll(std::string str, const std::string& from, const std::string& to);
 	
+	void SimulateDatatoLog(int counter);
+	bool ParseDebugLogText(std::string m_strBuffer, std::string delimiterStart, std::string delimiterEnd, bool isPacketFormat);
 	bool ParseCommand(std::string str);
+	bool ParseText(std::string str);
+	std::string GetTimeAsString(std::string formatString, time_t theTime);
 
     void addLog(const std::string& str);
 	
@@ -75,6 +120,11 @@ private:
 	bool LoadVersion(uint8_t ip_address_type, std::string& version);
 	bool GetDateTimeQRFLSynch(std::string& datetimeStr);
 	bool BlinkLED();
+	bool isAlphaNumericPacket(const char* packet);
+	bool isNumericHexPacket(const char* packet);
+	bool ProcessSettingsPacket(const char* packet);
+	std::string trim(const std::string& str);
+	bool CreateParameterSettingsJSONFile();
 
     static const uint32_t MAX_BUFFER_SIZE = 4096;
 
@@ -87,7 +137,9 @@ private:
 
     uint8_t m_aReadBuffer[MAX_BUFFER_SIZE];
     std::string m_strBuffer;
-
+	
+	time_t QRFLTime = 0;
+	
     std::size_t m_nSearchIndex = 0;
 
     std::chrono::system_clock::time_point m_logTime;;
@@ -100,11 +152,12 @@ private:
 	int16_t sequenceCounter = 0;
 	
 	uint8_t validNetworkSettingsRxState = 0;
+	
 	asio::ip::address_v4 IP;
 	asio::ip::address_v4 GATEWAY;
 	asio::ip::address_v4 NETMASK;
 	asio::ip::address_v4 NTPSERVER;
-	
+			
 	int16_t oldDetailsMatchCounter = 0;
 	std::string oldIPAddress = "";
 	std::string oldGatewayAddress = "";
@@ -117,6 +170,49 @@ private:
 	bool StdOutDebug = false;
 	
 	int16_t debugCounter = 1;		//Temporary Variable to make command sequences happen for testing
+	
+	std::string alarmLogDataString = "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0";
+	std::string tripLogDataString = "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0";
+	std::string prevAlarmLogDataString = "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0";
+	std::string prevTripLogDataString = "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0";
+	
+	//QRFL Settings
+	std::string QRFLNameA;
+	std::string QRFLNameB;
+	unsigned int QRFLConfiguration;
+	unsigned int QRFLUnitNumber;
+	unsigned int QRFLMode;
+	unsigned int QRFLActiveUnitList;
+
+	unsigned int QRFLRTUT0;
+	unsigned int QRFLILogThreshold;
+	unsigned int QRFLRTUErrorLimit;
+	unsigned int QRFLModemLimit;
+	unsigned int QRFLVTDetectThreshold;
+
+	unsigned int QRFLITDetectThreshold;
+	unsigned int QRFLSamplingStopDelay;
+	unsigned int QRFLSleepTime;
+	unsigned int QRFLCLRWaitTime;
+	unsigned int QRFLQTime;
+
+	unsigned int QRFLISRTime;
+	unsigned int QRFLLANLatencyMilliSecs;
+	unsigned int QRFLRxGain;
+	unsigned int QRFLTxGain;
+
+	unsigned int QRFLIPAddress[4];
+	unsigned int QRFLNetMaskAddress[4];
+	unsigned int QRFLGatewayAddress[4];
+	unsigned int QRFLNTPAddress[4];
+	//End QRFL Settings
+	
+	
+	//QRFL Settings File Generation Management 
+	bool receivedValidSettingsData[MAX_NUM_SETTING_COMMANDS];
+	std::string previousSettingsReplyString[MAX_NUM_SETTING_COMMANDS];
+	std::string currentSettingsReplyString[MAX_NUM_SETTING_COMMANDS];
+	//End QRFL Settings File Generation Management 
 	
 	uint16_t crc16_ccitt(const char *buf, int len);
 	

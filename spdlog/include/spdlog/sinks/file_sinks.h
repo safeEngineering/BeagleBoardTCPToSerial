@@ -71,18 +71,21 @@ template<class Mutex>
 class rotating_file_sink : public base_sink < Mutex >
 {
 public:
-    rotating_file_sink(const std::string &base_filename, const std::string &extension,
-                       std::size_t max_size, std::size_t max_files,
-                       bool force_flush = false) :
-        _base_filename(base_filename),
-        _extension(extension),
-        _max_size(max_size),
-        _max_files(max_files),
-        _current_size(0),
-        _file_helper(force_flush)
+	rotating_file_sink(const std::string &base_filename,
+		const std::string &extension,
+		std::size_t max_size,
+		std::size_t max_files,
+		bool force_flush = false) :
+_base_filename(base_filename),
+_extension(extension),
+_max_size(max_size),
+_max_files(max_files),
+_current_size(0),
+_file_helper(force_flush),
+_header(level::level_enum::off)
     {
         _file_helper.open(calc_filename(_base_filename, 0, _extension));
-        _current_size = _file_helper.size(); //expensive. called only once
+        _current_size = _file_helper.size(); //expensive. called only once	    
     }
 
     void flush() override
@@ -93,13 +96,32 @@ public:
 protected:
     void _sink_it(const details::log_msg& msg) override
     {
+	    if (msg.level == level::level_enum::notice)
+	    {
+		    _header = details::log_msg(msg);
+		    return;								//Dont Print these notice messages.
+	    }
+	    if (_current_size == 0)
+	    {
+		    if (_header.level == level::level_enum::notice)
+		    {			
+			    _current_size += _header.formatted.size();
+			    _file_helper.write(_header);      //AE TEST to create header line.	
+		    }
+	    }
         _current_size += msg.formatted.size();
         if (_current_size > _max_size)
         {
             _rotate();
-            _current_size = msg.formatted.size();
+	        _current_size = 0;
+            if (_header.level == level::level_enum::notice)
+	        {
+		        _current_size += _header.formatted.size();	  
+		        _file_helper.write(_header);      //AE TEST to create header line.	
+	        }
+	        _current_size += msg.formatted.size();	        	        
         }
-        _file_helper.write(msg);
+	    _file_helper.write(msg);
     }
 
 private:
@@ -147,6 +169,7 @@ private:
     std::size_t _max_files;
     std::size_t _current_size;
     details::file_helper _file_helper;
+	details::log_msg _header;
 };
 
 typedef rotating_file_sink<std::mutex> rotating_file_sink_mt;

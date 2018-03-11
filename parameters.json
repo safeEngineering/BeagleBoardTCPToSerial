@@ -1,0 +1,34 @@
+{
+  "parameters1": [
+   {
+   "dc_filter":"on",
+   "ext_rtu":"on",
+   "mode":"v23",
+   "v23":"off",
+   "log":"on",
+   "vt_detect":"on",
+   "it_detect":"off"
+   }
+],
+  "parameters2": [
+   {
+   "rtu_time_out":"05",
+   "amps_log_thld":"1200",
+   "rtu_limit":"4",
+   "mdm_limit":"3",
+   "vt_thld":"100",
+   "it_thld":"0500",
+   "bs_length":"096",
+   "sleep_time":"10",
+   "clr_wait":"10",
+   "q_time":"60",
+   "isr_time":"30"
+   }
+],
+  "parameters3": [
+   {
+   "rx_gain":"-9",
+   "tx_gain":"0.0"
+   }
+]
+}
