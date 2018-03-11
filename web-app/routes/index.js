@@ -162,7 +162,9 @@ router.post('/general', function(req, res, next) {
       // Save new data to json file
       var newJsonString = JSON.stringify(jsonObj, null, 2);  
       fs.writeFileSync('../bridge-app/settings.json', newJsonString);
-
+		
+	  var result1 = shell.exec("sudo /home/debian/QRFL_Service_Reset.sh", {silent:true});
+	
       res.render('success', { message : 'General settings have updated!' });
     }
   });
@@ -411,7 +413,7 @@ router.post('/network', function(req, res, next) {
       var newJsonString = JSON.stringify(jsonObj, null, 2);
       fs.writeFileSync('../bridge-app/settings.json', newJsonString);
 
-      var result1 = shell.exec("sudo ../QRFL_Restart_Services.sh", {silent:true});
+      var result1 = shell.exec("sudo /home/debian/QRFL_Service_Reset.sh", {silent:true});
 
       //
       // Update network settings
