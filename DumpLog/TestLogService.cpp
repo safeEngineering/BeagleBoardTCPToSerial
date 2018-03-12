@@ -518,7 +518,7 @@ void TestLogService::handleRestartTimer(const std::error_code& errorCode)
 		
 	debugCounter++;     
 	
-	SimulateDatatoLog(debugCounter);   //AE SIMULATOR
+	//SimulateDatatoLog(debugCounter);   //AE SIMULATOR
 		
 	if ((debugCounter % 10) == 0)
 	{
@@ -527,9 +527,13 @@ void TestLogService::handleRestartTimer(const std::error_code& errorCode)
 		if (debugCounter == 10)
 		{
 			std::cout << "REQUEST SETTINGS" << std::endl;
-			SendBasicCommand(DD_PACKET_SETTINGS_REQ_CMD, inputStr);	
-			debugCounter = 0;  //AE TEST
+			SendBasicCommand(DD_PACKET_SETTINGS_REQ_CMD, inputStr);				
 		}
+		if (debugCounter == 100)
+		{
+			debugCounter = 0;   // Start Counter Again.
+		}
+		
 /*		
 		if (debugCounter == 20)
 		{
