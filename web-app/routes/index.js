@@ -100,6 +100,8 @@ router.get('/general', function(req, res, next) {
 
   res.render('general', { unit: jsonObj.self_id,
                           site: jsonObj.site_name,
+			  qrflsitename:jsonObjpara.parameters0[0].qrfl_site_name,
+			  qrflunitid:jsonObjpara.parameters0[0].qrfl_unit_id,
                           serial: jsonObj.serial_number,
 						  localBoardTime: dateTimeNow,
                           dcfilter: (jsonObjpara.parameters1[0].dc_filter == "on" ? 'true' : 'false'),
@@ -122,9 +124,13 @@ router.get('/general', function(req, res, next) {
 			  isrtime: jsonObjpara.parameters2[0].isr_time,
 			  rxgain: jsonObjpara.parameters3[0].rx_gain,
 			  txgain: jsonObjpara.parameters3[0].tx_gain,
-		          alarm: 'mk1',
-                          logmode: 'normal',
-		          commmode: 'ethernet' });
+			  qrfl_ip_address:jsonObjpara.parameters0[0].qrfl_ip_address,
+			  qrfl_netmask_address:jsonObjpara.parameters0[0].qrfl_netmask_address,
+			  qrfl_gateway_address:jsonObjpara.parameters0[0].qrfl_gateway_address,
+			  qrfl_ntp_address:jsonObjpara.parameters0[0].qrfl_ntp_address,			  			  
+			  alarm: 'mk1',
+			  logmode: 'normal',
+			  commmode: 'ethernet' });
 });
 
 router.post('/general', function(req, res, next) {

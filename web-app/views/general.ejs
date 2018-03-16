@@ -62,7 +62,7 @@
         padding: 0;
         width: 150px;
         background-color: #808080;
-        height:1675px;
+        height:2000px;
     }
 
     li a {
@@ -143,6 +143,36 @@
           </div>
           <div class="rTableCell">
       <input type="text" id="serial" name="serial" value="<%= serial %>" style="width:150px;">
+          </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="QRFLsite">QRFL Site Name</label>
+          </div>
+          <div class="rTableCell">
+      <input type="text" id="QRFLsite" name="QRFLsite" value="<%= qrflsitename%>" readonly  style="width:150px;color:#808080;">
+          </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="qrlfunit">QRFL Unit ID</label>
+          </div>
+          <div class="rTableCell">
+
+            <select id="qrlf_unit_id" name="qrlf_unit_id" disabled="true" style="color:#808080;">
+              <option value="0" <%= qrflunitid == '0' ? 'selected' : ''%>>Master</option>
+              <option value="9" <%= qrflunitid == '9' ? 'selected' : ''%>>Sub-Master</option>
+              <option value="1" <%= qrflunitid == '1' ? 'selected' : ''%>>Slave 1</option>
+              <option value="2" <%= qrflunitid== '2' ? 'selected' : ''%>>Slave 2</option>
+              <option value="3" <%= qrflunitid == '3' ? 'selected' : ''%>>Slave 3</option>
+              <option value="4" <%= qrflunitid == '4' ? 'selected' : ''%>>Slave 4</option>
+              <option value="5" <%= qrflunitid == '5' ? 'selected' : ''%>>Slave 5</option>
+              <option value="6" <%= qrflunitid == '6' ? 'selected' : ''%>>Slave 6</option>
+              <option value="7" <%= qrflunitid == '7' ? 'selected' : ''%>>Slave 7</option>
+              <option value="8" <%= qrflunitid == '8' ? 'selected' : ''%>>Slave 8</option>
+            </select>
           </div>
         </div>
 
@@ -410,6 +440,43 @@
 	dBm
         </div>
         </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="ipaddress">IP Address </label>
+          </div>
+          <div class="rTableCell">
+      <label for="ipaddress"><%= qrfl_ip_address%></label>
+    </div>
+        </div>
+
+        <div class="rTableRow">
+          <div class="rTableCell">
+      <label for="subnet">Subnet </label>
+          </div>
+          <div class="rTableCell">
+      <label for="subnet"><%= qrfl_netmask_address%></label>
+      </div>
+        </div>
+
+        <div class="rTableRow">
+    <div class="rTableCell">
+            <label for="gateway">Gateway </label>
+          </div>
+    <div class="rTableCell">
+            <label for="gateway"><%= qrfl_gateway_address%></label>
+    </div>
+        </div>
+
+                <div class="rTableRow">
+          <div class="rTableCell">
+            <label for="ntpservers">NTP Server</label>
+          </div>
+          <div class="rTableCell">
+            <label for="ntpservers"><%= qrfl_ntp_address%></label>
+          </div>
+        </div>
+
         </div>
 <!--
         <div class="rTableRow">
