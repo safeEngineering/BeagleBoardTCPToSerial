@@ -175,14 +175,14 @@ int main(int argc, char *argv[])
     test_log->set_pattern("%v");
 	
 	std::vector<spdlog::sink_ptr> event_sinks;
-	event_sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(strLogPathEventLog + "Events-" + appSettings.SiteName, "txt", 2 * 1024, 3, false));
+	event_sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(strLogPathEventLog + "Events-" + appSettings.SiteName, "txt", 128 * 1024, 3, false));
 	auto event_log = spdlog::create("event_log", begin(event_sinks), end(event_sinks));
 	event_log->set_pattern("[%d/%m/%Y %H:%M:%S] ,%v");
 	// FIXME: level should be err normally
 	event_log->set_level(spdlog::level::info);
 	
 	std::vector<spdlog::sink_ptr> fault_sinks;
-	fault_sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(strLogPathFaultLog + "Faults-" + appSettings.SiteName, "txt", 4 * 1024, 3, false));
+	fault_sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(strLogPathFaultLog + "Faults-" + appSettings.SiteName, "txt", 128 * 1024, 3, false));
 	auto fault_log = spdlog::create("fault_log", begin(fault_sinks), end(fault_sinks));
 	fault_log->set_pattern("[%d/%m/%Y %H:%M:%S] ,%v");	
 	// FIXME: level should be err normally
