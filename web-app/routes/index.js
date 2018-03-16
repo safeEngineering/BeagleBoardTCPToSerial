@@ -181,6 +181,8 @@ router.get('/network', function(req, res, next) {
   // Read data from json file
   var jsonString = fs.readFileSync('../bridge-app/settings.json');
   var jsonObj = JSON.parse(jsonString);
+  var jsonStringpara = fs.readFileSync('../bridge-app/parameters.json');
+  var jsonObjpara = JSON.parse(jsonStringpara);
   //console.log(jsonObj);
 
   dns_ip1 = "";
@@ -224,7 +226,17 @@ router.get('/network', function(req, res, next) {
  			    port: '33689',
 			    interval: '10000',
 			    ntpservers: ntpservers,
-  			    enable0: (jsonObj.units[0].unit_type == "master" ? 'true' : 'false'),
+				qrfl_active_units0: (jsonObjpara.parameters0[0].qrfl_active_units & 0x0001 ? '*' : ' '),
+  			    qrfl_active_units1: (jsonObjpara.parameters0[0].qrfl_active_units & 0x0002 ? '*' : ' '),
+				qrfl_active_units2: (jsonObjpara.parameters0[0].qrfl_active_units & 0x0004 ? '*' : ' '),
+				qrfl_active_units3: (jsonObjpara.parameters0[0].qrfl_active_units & 0x0008 ? '*' : ' '),
+				qrfl_active_units4: (jsonObjpara.parameters0[0].qrfl_active_units & 0x0010 ? '*' : ' '),
+				qrfl_active_units5: (jsonObjpara.parameters0[0].qrfl_active_units & 0x0020 ? '*' : ' '),
+				qrfl_active_units6: (jsonObjpara.parameters0[0].qrfl_active_units & 0x0040 ? '*' : ' '),
+				qrfl_active_units7: (jsonObjpara.parameters0[0].qrfl_active_units & 0x0080 ? '*' : ' '),
+				qrfl_active_units8: (jsonObjpara.parameters0[0].qrfl_active_units & 0x0100 ? '*' : ' '),		
+  			    qrfl_active_units9: (jsonObjpara.parameters0[0].qrfl_active_units & 0x0200 ? '*' : ' '),  			    
+				enable0: (jsonObj.units[0].unit_type == "master" ? 'true' : 'false'),
 			    unit0: jsonObj.units[0].unit_ipaddr,
  			    enable1: (jsonObj.units[1].unit_type == "slave" ? 'true' : 'false'),
 			    unit1: jsonObj.units[1].unit_ipaddr,
