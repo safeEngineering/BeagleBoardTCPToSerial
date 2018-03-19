@@ -553,7 +553,7 @@ void TestLogService::handleRestartTimer(const std::error_code& errorCode)
 	{
 		
 	
-		if ((QRFLTimeDifference > TIME_SYNC_TOLERANCE_SECS) && (QRFLTimeDifferenceBlankOutCounter == 0) && (m_NTP.m_NtpActive >= NTP_POLL_ACCEPTABLE_ONLINE_COUNT))  //If time out of synch and NTP Server is active
+		if ((fabs(QRFLTimeDifference) > TIME_SYNC_TOLERANCE_SECS) && (QRFLTimeDifferenceBlankOutCounter == 0) && (m_NTP.m_NtpActive >= NTP_POLL_ACCEPTABLE_ONLINE_COUNT))  //If time out of synch and NTP Server is active
 			{
 				inputStr = "";
 				GetDateTimeQRFLSynch(inputStr);

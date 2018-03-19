@@ -14,7 +14,7 @@
 #include <chrono>
 #include <memory>
 
-#define VERSION_STR "V0R04"
+#define VERSION_STR "V0R05"
 
 namespace aurizon
 {
