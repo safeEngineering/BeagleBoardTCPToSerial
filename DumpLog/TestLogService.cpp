@@ -66,6 +66,7 @@ TestLogService::TestLogService(asio::io_service &ioService, const std::string &s
 			previousSettingsReplyString[i] = "";
 			currentSettingsReplyString[i] = "";
 		}
+		QRFLTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 	
 }
 
@@ -553,11 +554,13 @@ void TestLogService::handleRestartTimer(const std::error_code& errorCode)
 	{
 		
 	
-		if ((fabs(QRFLTimeDifference) > TIME_SYNC_TOLERANCE_SECS) && (QRFLTimeDifferenceBlankOutCounter == 0) && (m_NTP.m_NtpActive >= NTP_POLL_ACCEPTABLE_ONLINE_COUNT))  //If time out of synch and NTP Server is active
+		if ( ((fabs(QRFLTimeDifference) > TIME_SYNC_TOLERANCE_SECS) || (QRFLResetEventOccured)) && (QRFLTimeDifferenceBlankOutCounter == 0) && (m_NTP.m_NtpActive >= NTP_POLL_ACCEPTABLE_ONLINE_COUNT))  //If time out of synch and NTP Server is active
 			{
 				inputStr = "";
+				std::cout << "TIME SYNCHRONISATION"  <<  std::endl;		
 				GetDateTimeQRFLSynch(inputStr);
 				QRFLTimeDifferenceBlankOutCounter = TIME_SYNC_REPEAT_LOCKOUT;
+				QRFLResetEventOccured = false;
 			}
 		else
 		{
@@ -1021,6 +1024,11 @@ bool TestLogService::ParseCommand(std::string str)
 			receivedValidSettingsData[9] = true;
 			currentSettingsReplyString[9] = str;
 			CreateParameterSettingsJSONFile();
+			break;
+		case DD_PACKET_RESET_STATUS_CMD:
+			if (StdOutDebug) std::cout << "QRFL RESET EVENT" << std::endl;
+			QRFLResetEventOccured = true;
+			QRFLTimeDifferenceBlankOutCounter = TIME_SYNC_REPEAT_LOCKOUT;  //Delay synchronisation of QRFL time after a reset event to allow QRFL to reboot properly.
 			break;
 		default:
 			return false;

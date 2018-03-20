@@ -139,6 +139,7 @@ private:
     std::string m_strBuffer;
 	
 	time_t QRFLTime = 0;
+	bool  QRFLResetEventOccured = false;
 	
     std::size_t m_nSearchIndex = 0;
 
