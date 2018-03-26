@@ -1,3 +1,11 @@
+/************************************************************
+ * NTP.h
+ * Network Time Service Check Implementation.
+ * Version History:
+ * Author				Date		Version  What was modified?
+ * SAFE	Engineering		26th Mar 2018	0.0.5    Official Release to Aurzion
+ ************************************************************/
+
 #ifndef NTP_HPP
 #define NTP_HPP
 
@@ -47,7 +55,7 @@ namespace SafeEngineering
 	        {
 	        }
 	        
-	        
+	        //Set IP Address of NTP Server
 	        void SetIPAddress(std::string NTPIPAddress)	
 	        {
 		        asio::ip::udp::resolver resolNtp(m_ioService);
@@ -64,6 +72,7 @@ namespace SafeEngineering
 		        m_NtpTimer.async_wait(boost::bind(&NTP::HandleNTPInterval, this));
 	        }
 	        
+	        //Stop NTP Asynch Process
 	        void StopNTP()
 	        {	            
 		        is_running = false;
@@ -213,11 +222,11 @@ namespace SafeEngineering
 				asio::ip::udp::endpoint m_NtpEP;
 				// Buffer holds reply message from NTP
 				boost::array<unsigned long, 1024> m_NtpReplyBuffer;
-			
+				// Indicator of a Valid RX NTP packet from the server
 				bool m_NtpRxValidPacket;
-	        
+				// Indicator to send console I/O to StdOut
 				bool StdOutDebug = false;
-	        
+				//Indicator if NTP Asynch process is running.
 				bool is_running = true;
 	        	                                            
 			}

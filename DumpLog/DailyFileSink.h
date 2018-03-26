@@ -1,9 +1,9 @@
 /************************************************************
  * DailyFileSink.h
- *
+ * Data Dump Log Daily Rotating Log File Implementation
  * Version History:
  * Author				Date		Version  What was modified?
- * SAFE	Engineering		3 Nov 2015	1.0.0    Original
+ * SAFE	Engineering		26th Mar 2018	0.0.5    Official Release to Aurzion
  ************************************************************/
 
 #ifndef __DAILYFILESINK_H_

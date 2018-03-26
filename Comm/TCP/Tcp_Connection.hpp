@@ -1,3 +1,11 @@
+/************************************************************
+ * TCP_Connection.h
+ * TCP Client Socket Implementation
+ * Version History:
+ * Author				Date		Version  What was modified?
+ * SAFE	Engineering		26th Mar 2018	0.0.5    Official Release to Aurzion
+ ************************************************************/
+
 #ifndef TCP_CONNECTION_HPP
 #define TCP_CONNECTION_HPP
 
@@ -115,6 +123,7 @@ namespace SafeEngineering
                 m_socket.async_connect(ep, boost::bind(&Connection::HandleConnect, shared_from_this(), asio::placeholders::error));
             }
             
+	        //Handle incoming socket data 
             void HandleRead(const asio::error_code& err, const std::size_t& bytes_received)
             {
                 if(!err)
@@ -147,6 +156,7 @@ namespace SafeEngineering
                 }
             }
             
+	        //Write Handler for outgoing socket data
             void HandleWrite(const asio::error_code& err, const std::size_t& bytes_sent)
             {
                 if(!err)
@@ -160,6 +170,7 @@ namespace SafeEngineering
                 }
             }
             
+	        //Attempt to initate a connection as per the serverIP and serverPort
             void HandleConnect(const asio::error_code& err)
             {
                 if(!err)
@@ -180,6 +191,7 @@ namespace SafeEngineering
                 }
             }
             
+	        //Handle incoming serial data
             void HandleSerialData(uint8_t* pPacket, uint8_t len)
             {
                 if(m_connectedSocket == false)
@@ -200,6 +212,7 @@ namespace SafeEngineering
                     asio::placeholders::bytes_transferred));
             }
             
+	        //Handle a socket connection that has been dropped that was previously established
             void ProcessBrokenConnection()
             {
                 // Close underlying socket
@@ -247,7 +260,7 @@ namespace SafeEngineering
             bool m_serverSide;
             // The flag specifies whether socket is actually connected or not
             bool m_connectedSocket;
-	        
+	        //Indicator variable to output STDOUT to console IO.
 	        bool StdOutDebug = false;
                         
         };  // Connection class

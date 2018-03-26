@@ -1,3 +1,11 @@
+/************************************************************
+ * TCP_Acceptor.h
+ * TCP Listening Socket Implementation
+ * Version History:
+ * Author				Date		Version  What was modified?
+ * SAFE	Engineering		26th Mar 2018	0.0.5    Official Release to Aurzion
+ ************************************************************/
+
 #ifndef TCP_ACCEPTOR_HPP
 #define TCP_ACCEPTOR_HPP
 
@@ -26,6 +34,7 @@ namespace SafeEngineering
                 m_currentConnection = nullptr;
             }
             
+	        //Setup Listening Connection based on local settings for host and port
             bool AcceptConnections()
             {
                 try
@@ -47,6 +56,7 @@ namespace SafeEngineering
             }
         
         private:
+	        //Handle and process an incoming socket connection 
             void HandleAccept(Connection::pointer new_connection, const asio::error_code& err)
             {
                 std::string remoteIP;
@@ -95,6 +105,7 @@ namespace SafeEngineering
                 }                
             }
             
+	        //Handle a dropped socket connection that was previously established.
             void HandleDroppedConnection(Connection::pointer dropped_connection)
             {
                 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -120,7 +131,7 @@ namespace SafeEngineering
             SafeEngineering::Comm::Connection::pointer m_currentConnection;
             // Valid IP
             std::string m_clientIP;
-	        
+	        //Indicator variable to output STDOUT to console IO.
 	        bool StdOutDebug = false;
             
         };  // Acceptor class

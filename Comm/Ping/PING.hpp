@@ -1,3 +1,11 @@
+/************************************************************
+ * PING.h
+ * Network Gateway Ping Service Check Implementation.
+ * Version History:
+ * Author				Date		Version  What was modified?
+ * SAFE	Engineering		26th Mar 2018	0.0.5    Official Release to Aurzion
+ ************************************************************/
+
 #ifndef PING_HPP
 #define PING_HPP
 
@@ -18,8 +26,11 @@
 #include "icmp_header.hpp"
 #include "ipv4_header.hpp"
 
+// Interval Between PING Checks
 #define GATEWAY_PING_INTERVAL           15
+// Number of pings to perform at each Interval above
 #define GATEWAY_PING_NUMBERS            5
+// Running total threshold of acceptable number of PING replies over last intervals to constitute NETWORK OK status.
 #define GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT   3
 
 namespace SafeEngineering
@@ -48,6 +59,7 @@ namespace SafeEngineering
 	        {
 	        }
 	        
+	        //Set IP Address of Gateway
 	        void SetIPAddress(std::string GatewayIPAddress)	
 	        {
 		        asio::ip::icmp::resolver resol(m_ioService);
@@ -64,6 +76,7 @@ namespace SafeEngineering
                 m_PingTimer.async_wait(boost::bind(&PING::HandlePingInterval, this));
             }
 	        
+	        //Stop Asych Pinging of Gateway
 	        void StopPing()
 	        {	            
 		        is_running = false;
@@ -252,11 +265,11 @@ namespace SafeEngineering
 				asio::ip::icmp::endpoint m_GatewayEP;
 				// Buffer holds reply message from gateway
 				asio::streambuf m_ReplyBuffer;
-	        
+				// Indicator of a Valid RX Ping packet from the gateway
 				bool m_PingRxValidPacket;
-            						
+				// Indicator to send console I/O to StdOut					
 				bool StdOutDebug = false;
-	        
+				//Indicator if Ping Asynch process is running.
 				bool is_running = true;
 			
 				// Numbers of total ping commands

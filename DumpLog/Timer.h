@@ -1,9 +1,10 @@
-/*
- * Timer.h
- *
- *  Created on: 13 Aug 2015
- *      Author: Dwain Weyers
- */
+/************************************************************
+ * TestLogService.h
+ * Generic Timer Implementation
+ * Version History:
+ * Author				Date		Version  What was modified?
+ * SAFE	Engineering		26th Mar 2018	0.0.5    Official Release to Aurzion
+ ************************************************************/
 
 #ifndef __TIMER_H_
 #define __TIMER_H_

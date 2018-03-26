@@ -1,3 +1,10 @@
+/************************************************************
+ * Main.cpp
+ * The Main Program Starting Point
+ * Version History:
+ * Author				Date		Version  What was modified?
+ * SAFE	Engineering		26th Mar 2018	0.0.5    Official Release to Aurzion
+ ************************************************************/
 #include <iostream>
 #include <ctime>
 
@@ -19,6 +26,7 @@ namespace spd = spdlog;
 
 const char PATH_SEP = '/';
 
+//Create the file system directory given by strPath if it does not exist already and apply the file permissions given in mode
 int mkpath(const std::string &strPath, unsigned int mode)
 {
 	std::size_t startIndex = 0;
@@ -73,34 +81,39 @@ int mkpath(const std::string &strPath, unsigned int mode)
 	return 0;
 }
 
+//Setup and Initialise the E23 Status and Data Log Files
 void InitialiseLogFiles(std::string siteName, SafeEngineering::Utils::UnitType unitType)
 {
 	try
 	{
 		std::string strLogPath = "/logs/web-app/public/log/";
-		//std::string strLogPath = "/home/debian/web-app/public/log/";
-        //std::string strLogPath = "./log/";
+		//std::string strLogPath = "/home/debian/web-app/public/log/";   //removed for Final Version
+        //std::string strLogPath = "./log/";							//removed for Final Version
         
+		//Make new file path to logs
 		if (mkpath(strLogPath, 0744))
 		{
 			std::cerr << "Unable to create log path: " << strLogPath << std::endl;
 			return;
 		}
 		
+		//Set Logging File System to refresh and flush only every 5 seconds.
 		spdlog::set_async_mode(8192, spdlog::async_overflow_policy::block_retry, nullptr, std::chrono::milliseconds(5000));
 		
+		//Create a rotating 32K x 3 File Logging system for E23 Data Log Debugging
 		std::vector<spdlog::sink_ptr> sinks;
 		sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(strLogPath + "E23CommsDataLog-" + siteName, "txt", 32 * 1024 , 3, false));
 		auto datalog = spdlog::create("E23DataLog", begin(sinks), end(sinks));
 		datalog->set_pattern("[%d-%m-%Y %H:%M:%S.%e] [%l] %v");
-		// FIXME: level should be err normally
 		datalog->set_level(spdlog::level::info);
 
+		//Create a rotating 30 day File Logging system for E23 Debug Status Messages indicating this services health and activity.
 		std::vector<spdlog::sink_ptr> test_sinks;
 		test_sinks.push_back(std::make_shared<SafeEngineering::DailyFileSink_st>(strLogPath, "E23CommsStatusLog-" + siteName, "txt", 30, false));
 		auto statusLog = spdlog::create("E23StatusLog", begin(test_sinks), end(test_sinks));
 		statusLog->set_pattern("%v");
 		
+		//Write Header Info to Log Files
 		if (unitType == SafeEngineering::Utils::UnitType::MASTER)	    
 		{
 			spdlog::get("E23StatusLog")->info() << SafeEngineering::Utils::timeString(std::chrono::system_clock::now()) << " Starting E23 [" << VERSION_STR << "] Status Log(MASTER)";
@@ -131,7 +144,7 @@ void InitialiseLogFiles(std::string siteName, SafeEngineering::Utils::UnitType u
 	}
 }
 
-
+//Main Program Starts Here
 int main(int argc, char **argv)
 {
     try
@@ -142,12 +155,13 @@ int main(int argc, char **argv)
         
 	    for (int i = 1; i < argc; i++)
 	    {
-		    if (strcmp(argv[i], "-o") == 0)
+		    if (strcmp(argv[i], "-o") == 0)   //-o options Enabled STDOUT to console
 		    {
 			    debugConsoleOutput = true;
 		    }		    
 	    }
 	    
+	    //Load JSON Settings file to global settings variables
         SafeEngineering::Utils::Settings appSettings;
         if(SafeEngineering::Utils::LoadSettings(appSettings) == false)
         {
@@ -179,6 +193,7 @@ int main(int argc, char **argv)
         // Open UART connection
         serial1.OpenSerial();
         
+	    //if MASTER
 	    if (appSettings.CurrentUnit.Type == SafeEngineering::Utils::UnitType::MASTER)
 	    {
 		    std::cout << "STARTING AS MASTER!!!" << std::endl;
@@ -213,7 +228,7 @@ int main(int argc, char **argv)
 			    }
 		    }
 		    
-		    //InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);
+		    //InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);  //Removed from here as called earlier
         	 	    
 			// Run the ASIO service
 		    try
@@ -238,7 +253,7 @@ int main(int argc, char **argv)
 		
 		    spdlog::drop_all();
 		    
-	    }
+	    }  //if SUBMASTER
 	    else if (appSettings.CurrentUnit.Type == SafeEngineering::Utils::UnitType::SUBMASTER)	    
 	    {
 		    std::cout << "STARTING AS SUBMASTER!!!" << std::endl;
@@ -263,7 +278,7 @@ int main(int argc, char **argv)
 			    }
 		    }
 		    
-		    //InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);
+		    //InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);  //Removed from here as called earlier
         	    	    
 			// Run the ASIO service
 		    try
@@ -287,7 +302,7 @@ int main(int argc, char **argv)
 		    spdlog::get("E23StatusLog")->flush();
 		
 		    spdlog::drop_all();
-	    }
+	    }  //if SLAVE
 	    else if (appSettings.CurrentUnit.Type == SafeEngineering::Utils::UnitType::SLAVE)	    
 	    {
 		    std::cout << "STARTING AS SLAVE!!!" << std::endl;
@@ -304,7 +319,7 @@ int main(int argc, char **argv)
 		    SafeEngineering::Comm::Acceptor acceptor2(ios, serial1, appSettings.CurrentUnit.IPAddress, 10002, appSettings.Units[8].IPAddress, debugConsoleOutput);  //[8] is SubMaster
 		    acceptor2.AcceptConnections();
 		    
-		    //InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);
+		    //InitialiseLogFiles(appSettings.SiteName, appSettings.CurrentUnit.Type);  //Removed from here as called earlier
         	    	    
 			// Run the ASIO service
 		    try

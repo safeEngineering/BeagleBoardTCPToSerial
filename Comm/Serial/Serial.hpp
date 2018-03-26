@@ -1,3 +1,11 @@
+/************************************************************
+ * Serial.h
+ * Serial Data Incoming and Outgoing To TCP Socket Router and Basic Command Processing
+ * Version History:
+ * Author				Date		Version  What was modified?
+ * SAFE	Engineering		26th Mar 2018	0.0.5    Official Release to Aurzion
+ ************************************************************/
+
 #ifndef SERIAL_HPP
 #define SERIAL_HPP
 
@@ -21,17 +29,23 @@
 #define START_OF_PACKET                 0x02
 #define END_OF_PACKET                   0x03
 
+//Debouce settings for External Shutdown Input 
 #define GPIO_PIN_READ_PERIOD            250         // ms
 #define DEBOUNCE_SAMPLES                4
 #define HIGH_SAMPLES_MASK               (pow(2, DEBOUNCE_SAMPLES) - 1)
 
+//Port and Pin definition for External Shutdown Input
 #define HEADER                          P9
 #define PIN                             27
 
+// Interval Between PING Checks (OBSELETED - as this function was moved to the Data Dump Test Log Service)
 #define GATEWAY_PING_INTERVAL           15
+// Number of pings to perform at each Interval above (OBSELETED - as this function was moved to the Data Dump Test Log Service)
 #define GATEWAY_PING_NUMBERS            5
+// Running total threshold of acceptable number of PING replies over last intervals to constitute NETWORK OK status. (OBSELETED - as this function was moved to the Data Dump Test Log Service)
 #define GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT   3
 
+//Maximum attempts to synchronise QRFL clock to Ethernet Clock (OBSELETED - as this function was moved to the Data Dump Test Log Service)
 #define NUMBER_OF_DATE_TIME_SYNCH_ATTEMPTS_PER_DAY 2
 
 #include "bbb.h"
@@ -45,9 +59,9 @@
 #include "icmp_header.hpp"
 #include "ipv4_header.hpp"
 
-//#define SIM_MASTER_MODE 1
+//#define SIM_MASTER_MODE 1   //Simulation for testing purposes only remove from Final Version
 
-//#define SIM_SLAVE_MODE 1
+//#define SIM_SLAVE_MODE 1   //Simulation for testing purposes only remove from Final Version
 
 namespace SafeEngineering
 {
@@ -84,7 +98,8 @@ namespace SafeEngineering
             
             // The event will signal whenever receiving the data packet from external serial device
             boost::signals2::signal<void(uint8_t*, uint8_t)> m_DataReceived;
-            
+
+	        //Open Serial Port to UART 1 with the default baud rate, flow control, Start and Stop bit options.
             void OpenSerial()
             {
                 try
@@ -126,7 +141,7 @@ namespace SafeEngineering
                     // Initialize GPIO_PIN_NAME pin as input pin
                     InitializeGPIOPin();
                     
-	                //Turn OFF PING AND NTP Check in this Service
+	                //Turn OFF PING AND NTP Check in this Service as it is now OBSELETED as this functionality was moved to the Data Dump Test Log Service
 	                
                     // Initialize gateway ping operation
                     //InitializePing();
@@ -141,11 +156,13 @@ namespace SafeEngineering
                 }
             }
             
+	        //Close Serial Port
             void CloseSerial()
             {
                 m_serialPort.close();
             }
 
+	        //Send a data packet out the serial port (via the queue) as per the E23 communications protocol (see documentation)
 #ifdef SIM_SLAVE_MODE	        
             bool SendPacket(uint8_t* pPacket, size_t len)
 #else
@@ -158,7 +175,7 @@ namespace SafeEngineering
                     return false;
 
 #ifdef SIM_SLAVE_MODE
-				   	            
+				//Simulate recieved data that a slave unit would typically send back
 	            if (pPacket[1] == 0xF1)
 	            {
 		            pPacket[0] = 0x02;
@@ -205,13 +222,13 @@ namespace SafeEngineering
 		        }
 	            
 #endif	            
-	            // Construct new packet for the queue
+	            // Construct new packet for the queue from the passed packet data
                 SerialPacket packet(pPacket, len);
                 
                 // Keep in mind. Calling to empty() will been ensured as atomic operation!!!
                 bool write_in_progress = !m_writePackets.empty();                
-                m_writePackets.push_back(packet);
-                if(!write_in_progress)
+                m_writePackets.push_back(packet);   //push packet onto queue
+                if(!write_in_progress)  //if not already sending another packet then process the queue and send the packet
                 {
                     if (StdOutDebug) std::cout  << "Sending bytes: " << Utils::ConvertToHex(pPacket, (int)len) << " to UART port" << std::endl;
 	                
@@ -230,7 +247,7 @@ namespace SafeEngineering
 	                
 	                rx_packet_cntr++;
 	                    
-                    // Send this packet to serial port now
+                    // Send this packet to serial port now from queue
                     asio::async_write(m_serialPort, asio::buffer(m_writePackets.front().Data(), m_writePackets.front().Length()), 
                         boost::bind(&Serial::HandleWrite, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
                 }
@@ -243,6 +260,8 @@ namespace SafeEngineering
             }
             
         private:        
+	        
+	        //Start Reading from the Serial Port
             void StartAsyncRead()
             {
                 // Clear content of buffer
@@ -251,6 +270,7 @@ namespace SafeEngineering
                 if (StdOutDebug) std::cout  << "Started asynchonous UART read operation" << std::endl;
             }
             
+	        //Process data read from the Serial Port
             void ReadHandler(const asio::error_code& err, std::size_t bytes)
             {
                 if(!err)
@@ -321,6 +341,7 @@ namespace SafeEngineering
                 }
             }
             
+	        //Serial Port Write Handler to write data that is on the queue to the serial port.
             void HandleWrite(const asio::error_code& err, std::size_t bytes)
             {
                 if(!err)
@@ -344,6 +365,7 @@ namespace SafeEngineering
                 }
             }
             
+	        //Handle Termination Signal to Abort the Service.
             void HandleSignal(const std::error_code err, int signalNnumber)
             {
                 if(!err)
@@ -371,6 +393,7 @@ namespace SafeEngineering
                 }
             }
 	        
+	        //Initialistion of the External Input Shutdown Port/Pin
             void InitializeGPIOPin()
             {
                 // Set PIN as digital input
@@ -385,6 +408,7 @@ namespace SafeEngineering
                 m_GPIOReadTimer.async_wait(boost::bind(&Serial::ReadGPIOPin, this));
             }
             
+	        //Read the state of the External Input ShutDown Pin
             void ReadGPIOPin()
             {
                 unsigned char currentlevel;
@@ -447,7 +471,7 @@ namespace SafeEngineering
                 m_GPIOReadTimer.async_wait(boost::bind(&Serial::ReadGPIOPin, this));
             }
             
-            // Start periodially timer used to ping gateway
+            // Start periodially timer used to ping gateway (OBSELETED - this functionality has been moved to the Data Dump Test Log Service)
             void InitializePing()
             {	            
 	            // Initialize periodically ping timer
@@ -455,7 +479,7 @@ namespace SafeEngineering
                 m_PingTimer.async_wait(boost::bind(&Serial::HandlePingInterval, this));
             }
             
-            // Process periodically timer and start first ping command
+	        // Process periodically timer and start first ping command  (OBSELETED - this functionality has been moved to the Data Dump Test Log Service)
             void HandlePingInterval()
             {                
                 // Reset numbers
@@ -465,7 +489,7 @@ namespace SafeEngineering
                 SendPingCommand();
             }
             
-	        // Send asynchronously Ping packet to gateway
+	        // Send asynchronously Ping packet to gateway  (OBSELETED - this functionality has been moved to the Data Dump Test Log Service)
 	        void SendPingCommand()
 	        {
 		        std::string body("\"Hello!\" from SerialTCP ping.");
@@ -517,7 +541,7 @@ namespace SafeEngineering
 				}
             }
             
-            // Process ping reply from gateway
+	        // Process ping reply from gateway  (OBSELETED - this functionality has been moved to the Data Dump Test Log Service)
             void HandlePingResponse(std::size_t length)
             {
                 // The actual number of bytes received is committed to the buffer so that we
@@ -549,7 +573,7 @@ namespace SafeEngineering
                 }
             }
             
-            // Handle timeout of Ping command
+	        // Handle timeout of Ping command  (OBSELETED - this functionality has been moved to the Data Dump Test Log Service)
             void HandlePingTimeout()
             {
 				//Close the Ping Socket
@@ -573,6 +597,7 @@ namespace SafeEngineering
                 }
             }
             
+	        //Process Incoming E23 Packets which are not routed out to TCP sockets but replied to via another serial command.
 	        bool ProcessLocalPackets(uint8_t* pPacket, uint8_t len)
 	        {
 		        
@@ -665,7 +690,7 @@ namespace SafeEngineering
 							*/
 							default:
 									//spdlog::get("E23DataLog")->info() << "PING ACTIVE (E6) : " << std::to_string(m_PingActive);
-									if (m_PingActive < GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT)
+									if(m_PingActive < GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT)  //(OBSELETED - this functionality has been moved to the Data Dump Test Log Service)
 									{
 										m_loopbuffer[2] = 0x30;    // 0x30, 0x30 indictes offline			            
 									}
@@ -673,7 +698,7 @@ namespace SafeEngineering
 									{
 										m_loopbuffer[2] = 0x31;    // 0x31, 0x31 indictes online
 									}
-									if (m_NTP.m_NtpActive < NTP_POLL_ACCEPTABLE_ONLINE_COUNT)  
+					        if (m_NTP.m_NtpActive < NTP_POLL_ACCEPTABLE_ONLINE_COUNT)  //(OBSELETED - this functionality has been moved to the Data Dump Test Log Service)
 									{
 										m_loopbuffer[3] = 0x30;    // 0x30, 0x30 indictes offline			            
 									}
@@ -690,6 +715,7 @@ namespace SafeEngineering
 			        
 			        if (m_loopbuffer[1] == 0xE5) 
 			        {
+				        //(OBSELETED - this functionality has been moved to the Data Dump Test Log Service)
 				        //spdlog::get("E23DataLog")->info() << "PING ACTIVE (E5) : " << std::to_string(m_PingActive);                 				        
 				        if (m_PingActive < GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT)
 						{
@@ -717,7 +743,7 @@ namespace SafeEngineering
 				        sendreply = true;
 			        } 
 			        
-			        if (m_loopbuffer[1] == 0xEA) // Software Version 
+			        if (m_loopbuffer[1] == 0xEA) // Return Software Version 
 			        {
 				        snprintf((char *) &(m_loopbuffer[2]), 6, VERSION_STR);				        
 				        m_loopbuffer[7] = 0x0D;
@@ -726,7 +752,7 @@ namespace SafeEngineering
 			
 			        }
 			        
-			        if (m_loopbuffer[1] == 0xEB)   //Latency  0x0F (15 x 10ms) = 150ms
+			        if (m_loopbuffer[1] == 0xEB)   //Return LAN Latency  0x0F (15 x 10ms) = 150ms
 			        {
 				        m_loopbuffer[2] = 0x30;
 				        m_loopbuffer[3] = 0x3F;
@@ -738,6 +764,7 @@ namespace SafeEngineering
 				        sendreply = true;
 			        }
 			        
+			        //(OBSELETED - this functionality has been moved to the Data Dump Test Log Service)
 			        if ((m_loopbuffer[1] == 0xEC)  || (m_loopbuffer[1] == 0xED))   // IP Commands
 			        {
 				        IPAddrPtr = SafeEngineering::Utils::GetIPAddressLCDString(IPAddress, sizeof(IPAddress));	    	    
@@ -941,8 +968,10 @@ namespace SafeEngineering
 	        int fault_cntr = 1;
 	        int rx_packet_cntr = 0;
 	        
+	        //Indicator variable to output STDOUT to console IO.
 	        bool StdOutDebug = false;
 	        
+	        //Comparision variable to see of a new hour has ticked over
 	        int previousHour = -1;
 	        	        	   
             // Catch terminated events

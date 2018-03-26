@@ -1,9 +1,9 @@
 /************************************************************
  * main.cpp
- *
+ * Main Starting Point of Program
  * Version History:
  * Author				Date		Version  What was modified?
- * SAFE	Engineering		6 Oct 2015	1.0.0    Original
+ * SAFE	Engineering		26th Mar 2018	0.0.5    Official Release to Aurzion
  ************************************************************/
 
 #include "Controller.h"
@@ -18,7 +18,7 @@
 #include <fstream>
 #include <json.hpp>
 
-
+//Create Default Network JSON backup configuration and settings Files for testing purposes
 void Init()
 {
 	
@@ -47,6 +47,7 @@ void Init()
 	outfileA << settingsjsonA;
 }
 
+//Read Backup Copy of Network JSON configuration File for testing purposes
 void Read()
 {
 	// Load json file from current directory
@@ -86,14 +87,7 @@ void Read()
 	
 	
 
-
-/************************************************************
- * main method
- *
- * Version History:
- * Author               Date        Version  What was modified?
- * SAFE Engineering     6 Oct 2015  1.0.0    Original
- ************************************************************/
+//Main Program Starts Here
 int main(int argc, char *argv[])
 {
 	std::cout << "START QRFL DATA DUMP LOG " << VERSION_STR << std::endl;
@@ -101,21 +95,21 @@ int main(int argc, char *argv[])
 	std::string strLogPath = "/logs/web-app/public/log/";    
 	std::string strLogPathEventLog = "/logs/web-app/public/eventlogs/";   
 	std::string strLogPathFaultLog = "/logs/web-app/public/faultlogs/";   
-	//std::string strLogPath = "/home/debian/web-app/public/log/";
+	//std::string strLogPath = "/home/debian/web-app/public/log/";  //Removed for Final Version - use this path for testing only.
 	
     bool bStdOut = false;
     bool bStdErr = false;
     for (int i=1; i<argc; i++)
     {
-        if (strcmp(argv[i], "-o") == 0)
+        if (strcmp(argv[i], "-o") == 0)    //-o options Enabled STDOUT to console
         {
             bStdOut = true;
         }
-        else if (strcmp(argv[i], "-e") == 0)
+        else if (strcmp(argv[i], "-e") == 0)  //-e options Enabled STDERR to console.
         {
             bStdErr = true;
         }
-	    else if (strcmp(argv[i], "-i") == 0)
+	    else if (strcmp(argv[i], "-i") == 0)  //-i options Create Test Network JSON Default Files.
 	    {
 		    bStdErr = true;
 		    Init();
@@ -124,6 +118,7 @@ int main(int argc, char *argv[])
 	    }
     }
 	
+	//Create the Logging Paths
 	if (aurizon::mkpath(strLogPath, 0744))
 	{
 		std::cerr << "Unable to create log path: " << strLogPath << std::endl;
@@ -142,6 +137,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 			 	
+	//Load the Settings JSON File to get the system parameters - i.e Site Name for the Logs.
 	SafeEngineering::Utils::Settings appSettings;
 	if (SafeEngineering::Utils::LoadSettings(appSettings) == false)
 	{
@@ -151,8 +147,10 @@ int main(int argc, char *argv[])
 	
 	std::cout << "SITENAME : '" << appSettings.SiteName << "'" << std::endl;
 
+	//Set Logging File System to refresh and flush only every 5 seconds.
     spdlog::set_async_mode(8192, spdlog::async_overflow_policy::block_retry, nullptr, std::chrono::milliseconds(5000));
 
+	//Redirect STDOUT and STDERR to Console I/O if required
     std::vector<spdlog::sink_ptr> sinks;
     if (bStdOut)
     {
@@ -163,49 +161,53 @@ int main(int argc, char *argv[])
         sinks.push_back(std::make_shared<spdlog::sinks::stderr_sink_st>());
     }
 	
+	//Create a rotating 32K x 3 File Logging system for Debug Status Messages indicating this services health and activity.
 	sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(strLogPath + "DebugStatusLog-" + appSettings.SiteName, "txt", 32 * 1024, 3, false));
     auto log = spdlog::create("status_log", begin(sinks), end(sinks));
     log->set_pattern("[%d-%m-%Y %H:%M:%S.%e] [%l] %v");
-    // FIXME: level should be err normally
 	log->set_level(spdlog::level::info);
 	
+	//Create a rotating 40 day File Logging system for the QRFL data dump logging contents
     std::vector<spdlog::sink_ptr> test_sinks;
 	test_sinks.push_back(std::make_shared<aurizon::DailyFileSink_st>(strLogPath, "DebugDataLog-" + appSettings.SiteName, "txt", 40, false));
     auto test_log = spdlog::create("dump_data_log", begin(test_sinks), end(test_sinks));
     test_log->set_pattern("%v");
 	
+	//Create a rotating 128K x 3 File Logging system for QRFKL Fault Logs
 	std::vector<spdlog::sink_ptr> event_sinks;
 	event_sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(strLogPathEventLog + "Events-" + appSettings.SiteName, "txt", 128 * 1024, 3, false));
 	auto event_log = spdlog::create("event_log", begin(event_sinks), end(event_sinks));
-	event_log->set_pattern("[%d/%m/%Y %H:%M:%S] ,%v");
-	// FIXME: level should be err normally
+	event_log->set_pattern("[%d/%m/%Y %H:%M:%S] ,%v");	
 	event_log->set_level(spdlog::level::info);
 	
+	//Create a rotating 128K x 3 File Logging system for QRFL Fault Logs	
 	std::vector<spdlog::sink_ptr> fault_sinks;
 	fault_sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(strLogPathFaultLog + "Faults-" + appSettings.SiteName, "txt", 128 * 1024, 3, false));
 	auto fault_log = spdlog::create("fault_log", begin(fault_sinks), end(fault_sinks));
 	fault_log->set_pattern("[%d/%m/%Y %H:%M:%S] ,%v");	
-	// FIXME: level should be err normally
 	fault_log->set_level(spdlog::level::info);
 
+	//Start Main Program Loop
     while (true)
     {
         log->info() << "Starting QRFL Data Dump Log [" << VERSION_STR << "]";
 	    
+	    //Initialise Evetn and Fault Log CSV Headers
 	    spdlog::get("event_log")->notice() << "QRFL_DATE,QRFL_TIME,START_IP,TRIP_X,TRIP_Y,OIL_SURGE_TRIP,OIL_TEMPERATURE_TRIP,WINDING_TEMPERATURE_TRIP,PRESSUREREL_TRIP,SPARE1_TRIP,SPARE2_TRIP,RESERVED,RESERVED,RESERVED,RESERVED,RESERVED,RESERVED,RESERVED,SPARE1_ALARM,BATTERY_CHARGER_ALARM,WINDING_TEMPERATURE_ALARM, BAG_RUPTURE_ALARM,OIL_TEMPERATURE_ALARM,GAS_ALARM,ALARM_W,ALARM_V,RESERVED,RESERVED,RESERVED,RESERVED,RESERVED,RESERVED,RESERVED,RESERVED";
 	    spdlog::get("fault_log")->notice() << "QRFL_DATE,QRFL_TIME,SUM FAULT CURRENTS 512 POINTS";
 
 			    
         asio::io_service ioService;
-
+	    
+	    //Start the Data Dump Log Test Service        
 	    aurizon::Controller controller(ioService, bStdOut);
-
-        controller.start();
+		controller.start();
 
         std::error_code errorCode;
         bool hasError = false;
         try
         {
+	        //Launch the Asynchronous Serial I/O
             ioService.run(errorCode);
             if (errorCode)
             {
@@ -228,11 +230,11 @@ int main(int argc, char *argv[])
             hasError = true;
         }
 
+	    //Flush All Bufffers to write and remaining Log information.
         log->flush();
         test_log->flush();
 	    event_log->flush();
-	    fault_log->flush();
-        
+	    fault_log->flush();        
         sync();
 
         if (hasError)
@@ -245,6 +247,7 @@ int main(int argc, char *argv[])
             return 0;
         }
 
+	    //Wait 2 seconds before stopping the program - give logs a chance to close.
         sleep(2);
     }
 }

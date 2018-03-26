@@ -1,9 +1,9 @@
 /************************************************************
  * Controller.h
- *
+ * Main Data Dump Log Service Controller Module
  * Version History:
  * Author				Date		Version  What was modified?
- * SAFE	Engineering		9 Oct 2015	1.0.0    Original
+ * SAFE	Engineering		26th Mar 2018	0.0.5    Official Release to Aurzion
  ************************************************************/
 
 #ifndef __CONTROLLER_H_
@@ -50,9 +50,7 @@ private:
     asio::io_service &m_ioService;
     Timer<std::chrono::steady_clock> m_timer;
     asio::signal_set m_signalSet;
-
     StopCode m_stopCode = StopCode::None;
-
     std::shared_ptr<TestLogService> m_ptrTestLogService;
 
 };

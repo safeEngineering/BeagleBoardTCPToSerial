@@ -1,9 +1,9 @@
 /************************************************************
  * TestLogService.cpp
- *
+ * Implementation of the Data Dump and Inter QRFL to Ethernet Board Command Protocol
  * Version History:
  * Author				Date		Version  What was modified?
- * SAFE	Engineering		8 Nov 2016	1.0.0    Original
+ * SAFE	Engineering		26th Mar 2018	0.0.5    Official Release to Aurzion
  ************************************************************/
 
 #include "TestLogService.h"
@@ -55,6 +55,7 @@ TestLogService::TestLogService(asio::io_service &ioService, const std::string &s
 {
 		int i;
 	
+		//Initialisation of private attributes
 		StdOutDebug = consoleDebug;
 		sequenceCounter = (int16_t) DD_PACKET_IPADDR_CMD;
 		m_NTP.m_NtpActive = 0;
@@ -74,9 +75,10 @@ TestLogService::~TestLogService()
 {
 }
 
+//Local Private Function Declaration
 static std::string timeString(const std::chrono::system_clock::time_point& tp);
 	
-	
+//Read and Setup NTP Server Check IP Addess and PING Gateway Check IP Address from Network Configuraton JSON File
 void TestLogService::ReadNTPandGatewayIPAddresses()
 	{
 				
@@ -88,7 +90,7 @@ void TestLogService::ReadNTPandGatewayIPAddresses()
 		
 		jsonFile >> settingsjson;
 	
-		
+		//Read Gateway from JSON file and Set IP Address of Gateway PING Check Process
 		auto valueA = settingsjson.find("Gateway_Configuration");
 		if (valueA != settingsjson.end()) 
 		{				
@@ -113,7 +115,7 @@ void TestLogService::ReadNTPandGatewayIPAddresses()
 							
 				std::string ip_address = ipaddress_string;
 				
-				//std::cout << "GATEWAY IP ADDRESS " << ip_address << std::endl;
+				//std::cout << "GATEWAY IP ADDRESS " << ip_address << std::endl; // Removed for Final Version
 			
 				m_PING.SetIPAddress(ip_address);
 			}
@@ -123,6 +125,7 @@ void TestLogService::ReadNTPandGatewayIPAddresses()
 			}												
 		}
 		
+		//Read NTP Server from JSON file and Set IP Address of NTP Check Process
 		auto valueB = settingsjson.find("NTP_Configuration");
 		if (valueB != settingsjson.end()) 
 		{	
@@ -157,7 +160,7 @@ void TestLogService::ReadNTPandGatewayIPAddresses()
 		}
 	}
 		
-
+//Start Service and Initiate Data Dump Log
 void TestLogService::start()
 {
     if (m_bIsRunning)
@@ -171,6 +174,7 @@ void TestLogService::start()
     startConnection();
 }
 
+//Stop Service and Initiate Data Dump Log
 void TestLogService::stop()
 {
 	spdlog::get("dump_data_log")->info() << timeString(std::chrono::system_clock::now()) << " Stopped";
@@ -189,6 +193,7 @@ void TestLogService::stop()
 	r_timer.cancel(errorCode);		
 }
 
+//Start Serial Connection and Gateway and NTP Checks
 void TestLogService::startConnection()
 {
     m_ptrSerialPort = std::make_shared<asio::serial_port>(m_ioService);
@@ -212,6 +217,7 @@ void TestLogService::startConnection()
     }
 }
 
+//Open Serial Port Connection with default baud, flow control , start and stop bits options.
 bool TestLogService::openConnection(asio::serial_port& serialPort)
 {
     std::error_code errorCode;
@@ -270,6 +276,7 @@ bool TestLogService::openConnection(asio::serial_port& serialPort)
     return true;
 }
 
+//Start Read of data from Serial Port
 void TestLogService::startRead()
 {
     auto self = shared_from_this();
@@ -282,6 +289,7 @@ void TestLogService::startRead()
     });
 }
 
+//Process Data read from Serial Port
 void TestLogService::handleRead(const std::error_code& errorCode, std::size_t nBytesReceived, int32_t nReadID)
 {
     if (errorCode == asio::error::operation_aborted || nReadID != m_nReadID)
@@ -301,19 +309,23 @@ void TestLogService::handleRead(const std::error_code& errorCode, std::size_t nB
         return;
     }
 
+	//If received data
     if (nBytesReceived != 0)
     {
         if (m_strBuffer.empty())
         {
             m_logTime = std::chrono::system_clock::now();
         }
+	    //Append the new data to the holding string buffer
         m_strBuffer.insert(m_strBuffer.end(), m_aReadBuffer, m_aReadBuffer + nBytesReceived);
 
         while (true)
         {
+	        //Look for end of dump log data sequence \r\n\r\n
             std::size_t nEndPos = m_strBuffer.find("\r\n\r\n", m_nSearchIndex);
             if (nEndPos == std::string::npos)
             {
+	            //if Buffer Size exceeds 4096 without the end sequece something has gone wrong so just dump the data as is to the log
                 if (m_strBuffer.size() > 4096)
                 {
                     addLog(m_strBuffer);	                	                	                	                		           	                
@@ -321,16 +333,18 @@ void TestLogService::handleRead(const std::error_code& errorCode, std::size_t nB
                     m_nSearchIndex = 0;
                 }
                 else if (m_strBuffer.size() >= 4)
-                {
+                {	//Otherwise update the next search starting position to bypass the data searched to date.
                     m_nSearchIndex = m_strBuffer.size() - 3;
                 }
                 break;
             }
             else
             {
+	            //Found the end seqeunce \r\n\r\n
                 std::string str = m_strBuffer.substr(0, nEndPos + 4);
                 addLog(str);
 	            
+	            //Old Test Code removed for final version
 				/*            
 	            //Find any commands
 	            std::string s = m_strBuffer;
@@ -386,23 +400,28 @@ void TestLogService::handleRead(const std::error_code& errorCode, std::size_t nB
 	
 	            //Find any non standard commands	            
 	            ParseDebugLogText(m_strBuffer, ":", "\r\n", false);
-		            
+		        
+	            //Erase buffered log data
 	            m_strBuffer.erase(0, nEndPos + 4);
 	            
+	            //Update Search Index to start again and update log timestamp to now
                 m_nSearchIndex = 0;
                 m_logTime = std::chrono::system_clock::now();	            	            
             }
         }
     }
-
+	
+	//Check for more data to read
     startRead();
 
+	//If data then start the timer to check for end sequence timeout
     if (m_strBuffer.size())
     {
         startRxTimer();
     }
 }
 
+//Restart Timer to initiate command seqeunce protocol	
 void TestLogService::TestLogService::startRestartTimer()
 {
     if (m_bRestarting)
@@ -417,6 +436,7 @@ void TestLogService::TestLogService::startRestartTimer()
             std::bind(&TestLogService::handleRestartTimer, this, std::placeholders::_1));
 }
 
+//Create data string for testing to simulate protocol data in abscence of Actual QRFL unit.
 void TestLogService::SimulateDatatoLog(int counter)		
 {
 		std::string s;
@@ -499,7 +519,8 @@ void TestLogService::SimulateDatatoLog(int counter)
 		ParseDebugLogText(s, ":", "\r\n", false);
 		
 }
-	
+
+//Run the command protocol state machine
 void TestLogService::handleRestartTimer(const std::error_code& errorCode)
 {	 
     if (errorCode == asio::error::operation_aborted)
@@ -535,7 +556,7 @@ void TestLogService::handleRestartTimer(const std::error_code& errorCode)
 			debugCounter = 0;   // Start Counter Again.
 		}
 		
-/*		
+/*		// Test code removed for final version
 		if (debugCounter == 20)
 		{
 			std::cout << "REQUEST NETWORK "  << std::endl;	
@@ -553,23 +574,25 @@ void TestLogService::handleRestartTimer(const std::error_code& errorCode)
 	else
 	{
 		
-	
+		//Check for time sycnronisation
 		if ( ((fabs(QRFLTimeDifference) > TIME_SYNC_TOLERANCE_SECS) || (QRFLResetEventOccured)) && (QRFLTimeDifferenceBlankOutCounter == 0) && (m_NTP.m_NtpActive >= NTP_POLL_ACCEPTABLE_ONLINE_COUNT))  //If time out of synch and NTP Server is active
 			{
 				inputStr = "";
 				std::cout << "TIME SYNCHRONISATION"  <<  std::endl;		
+				//Update time on QRFL
 				GetDateTimeQRFLSynch(inputStr);
 				QRFLTimeDifferenceBlankOutCounter = TIME_SYNC_REPEAT_LOCKOUT;
 				QRFLResetEventOccured = false;
 			}
 		else
 		{
-		
+			//Ignore time synch for some time (QRFLTimeDifferenceBlankOutCounter) after it was last set
 			if (QRFLTimeDifferenceBlankOutCounter > 0)
 			{
 				QRFLTimeDifferenceBlankOutCounter--;
 			}
 		
+			//Cycle thru the various commands in the protocol sequence
 			switch (sequenceCounter)
 			{
 			case DD_PACKET_IPADDR_CMD:
@@ -606,7 +629,8 @@ void TestLogService::handleRestartTimer(const std::error_code& errorCode)
 		}
 		
 	}
-		
+
+	//Send the command constructed by the state machine above to the serial port
 	if (inputStr != "")
 	{			
 		auto self = shared_from_this();
@@ -626,10 +650,12 @@ void TestLogService::handleRestartTimer(const std::error_code& errorCode)
 			});		
 	}
 	BlinkLED();
+	//Start the timing sequence again for the next iteration
 	startRestartTimer();
 	
 }
 
+//Start the timer to check for end sequence timeout on incoming data dump text
 void TestLogService::startRxTimer()
 {
     std::error_code errorCode;
@@ -637,7 +663,8 @@ void TestLogService::startRxTimer()
     m_timer.async_wait(
             std::bind(&TestLogService::handleRxTimer, this, std::placeholders::_1));
 }
-	
+
+//Replace all occurences of "from" substring to "to" substring in the passed string (str) 
 std::string TestLogService::ReplaceAll(std::string str, const std::string& from, const std::string& to) 
 {
 	size_t start_pos = 0;
@@ -648,7 +675,7 @@ std::string TestLogService::ReplaceAll(std::string str, const std::string& from,
 	return str;
 }	
 
-	
+//Parse the incoming data dump log string (M_strBuffer) for valid protocol packets or data dump text lines starting and ending with the delimiters
 bool TestLogService::ParseDebugLogText(std::string m_strBuffer, std::string delimiterStart, std::string delimiterEnd, bool isPacketFormat)
 {
 		
@@ -673,9 +700,11 @@ bool TestLogService::ParseDebugLogText(std::string m_strBuffer, std::string deli
 	posA = 0;
 	posB = 0;
 	
+	//while end delimter found
 	while ((posB = s.find(delimiterEnd)) != std::string::npos) {
 		
 		token = s.substr(0, posB);	
+		//if start delimeter found
 		if ((posA = token.find(delimiterStart)) != std::string::npos)   
 		{
 			if ((token.size() - posA) >= minimumSize)  //Valid Packet Data must be at least correct size
@@ -692,7 +721,7 @@ bool TestLogService::ParseDebugLogText(std::string m_strBuffer, std::string deli
 				}
 				else
 				{	
-					//Process non packet command
+					//Process non packet command (specifically the :M Fault Sum data dump text)
 					if(StdOutDebug) std::cout << "{" << token << "}" << std::endl;						
 					if (ParseText(token))   
 					{
@@ -704,7 +733,8 @@ bool TestLogService::ParseDebugLogText(std::string m_strBuffer, std::string deli
 		s.erase(0, posB + delimiterEnd.length());
 	}
 }
-	
+
+//Process the timer to check for end sequence timeout on incoming data dump text and then process the available data dump even if incomplete
 void TestLogService::handleRxTimer(const std::error_code& errorCode)
 {
     if (errorCode == asio::error::operation_aborted)
@@ -729,7 +759,7 @@ void TestLogService::handleRxTimer(const std::error_code& errorCode)
     m_nSearchIndex = 0;
 }
 	
-
+//CRC16 Checksum implementation
 uint16_t TestLogService::crc16_ccitt(const char *buf, int len)
 {
 	volatile int counter;
@@ -744,7 +774,8 @@ uint16_t TestLogService::crc16_ccitt(const char *buf, int len)
 	}
 	return crc;
 }
-	
+
+//Function to format a system time (theTime) as custom format (formatString) e.g "%d/%m/%Y, %H:%M:%S" for use in the Event and Fault Log timestamps
 std::string TestLogService::GetTimeAsString(std::string formatString, time_t theTime)
 {
 	struct tm *timeinfo;
@@ -756,7 +787,7 @@ std::string TestLogService::GetTimeAsString(std::string formatString, time_t the
 	return result;
 }
 	
-//Parse a Command of the format ":M    ...  "
+//Parse a Fault SUM Data Dump Command of the format ":M    ...  "
 bool TestLogService::ParseText(std::string str)
 {
 	const char *rxbuffer;
@@ -876,6 +907,7 @@ bool TestLogService::ParseCommand(std::string str)
 			NTPSERVER = asio::ip::address_v4::from_string(IPAddressString);
 			std::cout << "NTPSERVER - " << NTPSERVER.to_string() <<  std::endl;					
 			//UpdateNetworkSettingsJSONFile(DD_PACKET_NTPADDR_CMD, NTPSERVER.to_string());	
+			//If recieved all of the above commands IPADDR thru to NTPADDR then write the new JSON file
 			if(validNetworkSettingsRxState == 0x0F)
 			{
 				CreateNetworkSettingsJSONFile();			
@@ -895,7 +927,7 @@ bool TestLogService::ParseCommand(std::string str)
 				QRFLTime = mktime(&time_str);
 				
 				time_t systemTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-				
+				//Calculate difference between QRFL time and Ethernet Time
 				QRFLTimeDifference = difftime(systemTime, QRFLTime);
 				
 				if (StdOutDebug) std::cout << "QRFL TIME - " << date << "-" << month << "-" << year << " " << hr << ":" << min << ":" << sec <<  "{" << QRFLTimeDifference << "}" << std::endl;						
@@ -922,7 +954,8 @@ bool TestLogService::ParseCommand(std::string str)
 			}			
 			tripLogDataString.erase(tripLogDataString.length() - 1, 1);    //Erase last ','			
 			if(tripLogDataString != prevTripLogDataString)
-			{			
+			{	
+				//Write Event Log - Trip
 				spdlog::get("event_log")->info() << GetTimeAsString("%d/%m/%Y,%H:%M:%S,", QRFLTime) << tripLogDataString << "," << alarmLogDataString;
 				prevTripLogDataString = tripLogDataString;
 			}		
@@ -944,14 +977,17 @@ bool TestLogService::ParseCommand(std::string str)
 			alarmLogDataString.erase(alarmLogDataString.length() - 1, 1);       //Erase last ','			
 			if(alarmLogDataString != prevAlarmLogDataString)
 			{			
+				//Write Event Log - Alarm
 				spdlog::get("event_log")->info() << GetTimeAsString("%d/%m/%Y,%H:%M:%S,", QRFLTime) << tripLogDataString << "," << alarmLogDataString;				
 				prevAlarmLogDataString = alarmLogDataString;
 			}		
 			break;		
 		case DD_PACKET_TRIP_START_STATUS_CMD:
-			if (StdOutDebug) std::cout << "QRFL TRIP STATUS" << std::endl;
+			//Do nothing with Trip Start Status Commands in the version of firmware
+			if (StdOutDebug) std::cout << "QRFL TRIP STATUS" << std::endl;		
 			break;			
 		case DD_PACKET_ALARMS_STATUS_CMD:
+			//Do nothing with Alarm Status Commands in the version of firmware
 			if (StdOutDebug) std::cout << "QRFL ALARM STATUS" << std::endl;
 			break;
 		case DD_PACKET_SETTINGS1_STATUS_CMD:
@@ -1023,7 +1059,8 @@ bool TestLogService::ParseCommand(std::string str)
 			if (!ret) { if (StdOutDebug) {std::cout << "QRFL Settings 10 Parse Error"; }}
 			receivedValidSettingsData[9] = true;
 			currentSettingsReplyString[9] = str;
-			CreateParameterSettingsJSONFile();
+			//Last Settings Packet Received in the sequence so attempt to write the parameters JSON File.
+			CreateParameterSettingsJSONFile();  
 			break;
 		case DD_PACKET_RESET_STATUS_CMD:
 			if (StdOutDebug) std::cout << "QRFL RESET EVENT" << std::endl;
@@ -1037,7 +1074,7 @@ bool TestLogService::ParseCommand(std::string str)
 	return true;	
 }
 
-	
+//OBSELETED - Update the Network Settings JSON File with the specific ip address for IPADDRESS, NETMASK, GATEWAY or NTPSERVER parameter	
 	void TestLogService::UpdateNetworkSettingsJSONFile(uint8_t ip_address_type, std::string ip_address)
 	{
 		
@@ -1075,7 +1112,7 @@ bool TestLogService::ParseCommand(std::string str)
 			auto value = settingsjson.find(json_tag);
 			if (value != settingsjson.end()) 
 			{
-				
+				//Write the Network Settings JSON file.				
 				std::cout << "SETTINGS [" << ip_address << "]" << std::endl;
 				settingsjson[json_tag] = ip_address;	            	            
 				std::ofstream outfile("/home/debian/QRFL_Network_Settings.json", std::ios::out);
@@ -1096,6 +1133,7 @@ bool TestLogService::ParseCommand(std::string str)
 		}    
 	}
 	
+//Create a new or overwrite existing Network Settings JSON File with the specific received settings for IPADDRESS, NETMASK, GATEWAY or NTPSERVER parameter		
 	void TestLogService::CreateNetworkSettingsJSONFile()
 	{		
 		try
@@ -1175,7 +1213,8 @@ bool TestLogService::ParseCommand(std::string str)
 			return;
 		}    
 	}
-	
+
+//Send a simple protocol command with no data parameters with the format "?c                @XXXX\r"
 	bool TestLogService::SendBasicCommand(uint8_t command_type, std::string& command)	
 	{
 									
@@ -1194,21 +1233,24 @@ bool TestLogService::ParseCommand(std::string str)
 		
 		return true;		
 	}
-	
+
+	//Create an the data for an outgoing DD_PACKET_VERSION_CMD protocol command	
 	bool TestLogService::LoadVersion(uint8_t ip_address_type, std::string& version)	
 	{
 						
 		uint8_t activeState = ' ';		
 		char version_string[DD_PACKET_LENGTH + 2];
 		char VERSION_STR_CHAR_ARRAY[DD_PACKET_DATA_LENGTH + 1];
+		//Copy in Version Info for current firmware
 		strncpy(VERSION_STR_CHAR_ARRAY, VERSION_STR, DD_PACKET_DATA_LENGTH);
-				
+		
+		//Copy in Active state of Gateway Ping and NTP Check processes
 		activeState = '0';
-		if (m_NTP.m_NtpActive >= NTP_POLL_ACCEPTABLE_ONLINE_COUNT) 
+		if (m_NTP.m_NtpActive >= NTP_POLL_ACCEPTABLE_ONLINE_COUNT)   //NTP OK if greater than or equal Threshold constant
 		{									
 			activeState |= DD_PACKET_NETWORKSTATUS_BYTE_NTPACTIVE;
 		}
-		if (m_PING.m_PingActive >= GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT) 
+		if (m_PING.m_PingActive >= GATEWAY_PING_ACCEPTABLE_ONLINE_COUNT)  //GATEWAY OK if greater than or equal Threshold constant
 		{									
 			activeState |= DD_PACKET_NETWORKSTATUS_BYTE_PINGACTIVE;
 		}
@@ -1225,7 +1267,8 @@ bool TestLogService::ParseCommand(std::string str)
 		
 		return true;		
 	}
-	
+
+	//Load the specific ip address for IPADDRESS, NETMASK, GATEWAY or NTPSERVER parameter from the Network Configuration JSON File to send back to the QRFL via the comms protocol commands. 	
 	bool TestLogService::LoadNetworkConfigJSONFile(uint8_t ip_address_type, std::string& ip_address)
 	{
 	
@@ -1280,6 +1323,7 @@ bool TestLogService::ParseCommand(std::string str)
 				ip[0] = (ll & 0xFF);
 												
 				activeState = '0';
+				//Copy in Active state of Gateway Ping and NTP Check processes
 				if (m_NTP.m_NtpActive >= NTP_POLL_ACCEPTABLE_ONLINE_COUNT) 
 				{									
 					activeState |= DD_PACKET_NETWORKSTATUS_BYTE_NTPACTIVE;
@@ -1315,7 +1359,8 @@ bool TestLogService::ParseCommand(std::string str)
 		
 		return true;
 	}
-	
+
+//Load the specific clock time of the Ethernet Board to send back for time synchronisation to the QRFL via the comms protocol commands. 			
 	bool TestLogService::GetDateTimeQRFLSynch(std::string& datetimeStr)
 	{
 		uint8_t activeState = ' ';
@@ -1328,6 +1373,7 @@ bool TestLogService::ParseCommand(std::string str)
 			char datetime_string[DD_PACKET_LENGTH + 2];   //Allow for Null Characer at end plus a spare buye.
 			
 			activeState = '0';
+			//Copy in Active state of Gateway Ping and NTP Check processes				
 			if (m_NTP.m_NtpActive >= NTP_POLL_ACCEPTABLE_ONLINE_COUNT) 
 			{									
 				activeState |= DD_PACKET_NETWORKSTATUS_BYTE_NTPACTIVE;
@@ -1374,7 +1420,8 @@ bool TestLogService::ParseCommand(std::string str)
 		
 		return true;
 	}
-	
+
+//Trim Spaces from input string (str)	
 	std::string TestLogService::trim(const std::string& str)
 	{
 		size_t first = str.find_first_not_of(' ');
@@ -1384,6 +1431,7 @@ bool TestLogService::ParseCommand(std::string str)
 		return str.substr(first, (last - first + 1));
 	}
 
+	//Check if incoming character array (packet) contains only AlphaNumeric ASCII Characters ('0" thru '9' and 'A' thru 'Z'	and space)		
 	bool TestLogService::isAlphaNumericPacket(const char* packet)
 	{
 		int i;
@@ -1397,6 +1445,7 @@ bool TestLogService::ParseCommand(std::string str)
 		return true;   
 	}
 
+//Check if incoming character array (packet) contains only HEXADECIMAL ASCII Characters ('0" thru '9' and 'A' thru 'F')		
 	bool TestLogService::isNumericHexPacket(const char* packet)
 	{
 		int i;
@@ -1410,6 +1459,7 @@ bool TestLogService::ParseCommand(std::string str)
 		return true;   
 	}
 
+//Process the incoming settings protocol packet (packet) and decode the packet data into the relevant global settings variables.	
 	bool TestLogService::ProcessSettingsPacket(const char* packet)
 	{
 		char data[DD_PACKET_DATA_LENGTH + 1];
@@ -1484,7 +1534,7 @@ bool TestLogService::ParseCommand(std::string str)
 		return true;
 	}
 	
-	
+	//Write the global settings variables to the parameters JSON file for use by the WebPages. 	
 	bool TestLogService::CreateParameterSettingsJSONFile()
 	{		
 		std::string json_tag;
@@ -1552,6 +1602,7 @@ bool TestLogService::ParseCommand(std::string str)
 		}
 		};
 		
+		//Write Debug Info for Parameters
 		if (StdOutDebug) 
 		{
 					
@@ -1587,7 +1638,7 @@ bool TestLogService::ParseCommand(std::string str)
 		
 		try
 		{
-			
+			//Check if incoming settings data is complete and not the same as previously received data
 			for (i = 0; i < MAX_NUM_SETTING_COMMANDS; i++)
 			{
 				isValidFile &= receivedValidSettingsData[i];
@@ -1598,7 +1649,8 @@ bool TestLogService::ParseCommand(std::string str)
 			
 			if (!isValidFile) return false;   //Do not write and incompletly recevied file
 			if (isFileSame) return true;      //Do not write a file if it has not changed since last time.
-									
+			
+			///Write the JOSN file
 			settingsjson["parameters0"][0]["qrfl_site_name"] = QRFLNameA + QRFLNameB;	
 			settingsjson["parameters0"][0]["qrfl_active_units"] = std::to_string(QRFLActiveUnitList);			
 			settingsjson["parameters0"][0]["qrfl_unit_id"] = std::to_string(QRFLUnitNumber);
@@ -1722,13 +1774,15 @@ bool TestLogService::ParseCommand(std::string str)
 		return true;
              
 	}
-	
+
+//Stop the timer that checks for end sequence timeout on incoming data dump text
 void TestLogService::stopTimer()
 {
     std::error_code errorCode;
     m_timer.cancel(errorCode);
 }
 
+//Clear and Flush the incoming serial data buffer	
 void TestLogService::clearReadBuffer()
 {
     if (m_ptrSerialPort)
@@ -1737,11 +1791,13 @@ void TestLogService::clearReadBuffer()
     }
 }
 
+//Write Data Dump Log Text (str)
 void TestLogService::addLog(const std::string& str)
 {		
 	spdlog::get("dump_data_log")->info() << timeString(m_logTime) << "\r\n" << str;
 }
 
+//Format a system time (tp) into a data dump log timestamp e.g "[26-03-2018 12:34:23.345]"
 static std::string timeString(const std::chrono::system_clock::time_point& tp)
 {
     time_t t = std::chrono::system_clock::to_time_t(tp);
@@ -1757,7 +1813,7 @@ static std::string timeString(const std::chrono::system_clock::time_point& tp)
     return std::string(szDateBuffer, nStartLength + nEndLength);
 }
 
-		
+//Blink the onboard activity LED		
 	bool TestLogService::BlinkLED()
 	{
 		FILE *export_file = NULL;  //declare pointers

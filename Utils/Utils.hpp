@@ -1,3 +1,11 @@
+/************************************************************
+ * TestLogService.h
+ * Generic Utility Functions Implementation
+ * Version History:
+ * Author				Date		Version  What was modified?
+ * SAFE	Engineering		26th Mar 2018	0.0.5    Official Release to Aurzion
+ ************************************************************/
+
 #ifndef UTILITY_HPP
 #define UTILITY_HPP
 
@@ -12,6 +20,7 @@
 
 #include <json.hpp>
 
+//Max Number of remote units including, Master, Slaves and SubMaster
 #define MAX_REMOTE_UNIT_NUMBERS            10
 
 namespace SafeEngineering
@@ -52,6 +61,8 @@ namespace SafeEngineering
             std::array<Unit, MAX_REMOTE_UNIT_NUMBERS> Units;
         } Settings;
 	    
+	    //Obseleted function to read the current system Ethernet IP Address and format it into a minimum 8 character HEXADECIMAL string (e.g 192.168.1.100 -> "C0A80064") 
+	    //if the formatted string (IPAddress) length (sizeIPAddress) is longer than 8 characters then it is padded with '0' characters and null terminated.
 	    inline char* GetIPAddressLCDString(char* IPAddress, size_t sizeIPAddress)
 	    {
 	    
@@ -88,6 +99,8 @@ namespace SafeEngineering
 						    ipaddr[2] = (unsigned char) ipA % 256;
 						    ipA >>= 8;
 						    ipaddr[3] = (unsigned char) ipA % 256;
+						    
+						    //Debug info removed
 						    //printf("Interface: %s\tAddress: %s : \n", ifa->ifa_name, addr);    
 						    //printf("IP %ul {%03d.%03d.%03d.%03d} \n", ipA, ipaddr[0], ipaddr[1], ipaddr[2], ipaddr[3]);    
 						
@@ -123,6 +136,8 @@ namespace SafeEngineering
 		    return IPAddress;
 	    }
 	    
+	    //Obseleted function to format a system Date Time (tp) into a minimum 12 character HEXADECIMAL string (e.g Mar 26th 2018 11:01:00AM -> "180326110100") 
+	    //if the formatted string (DateTimeStr) length (sizeDateTime) is longer than 12 characters then it is padded with '0' characters and null terminated.	    
 	    inline char* GetDateTimeLCDString(char* DateTimeStr, size_t sizeDateTime, const std::chrono::system_clock::time_point& tp)
 	    {
 		    //Initialise to All Zeros
@@ -154,6 +169,7 @@ namespace SafeEngineering
 			    DateTimeStr[11] = (ptm->tm_mday % 10) + 0x30;			    
 			    DateTimeStr[12] = 0x00;
 				
+			    //Debug Info removed
 			    //printf("LCD DateTime %d %d %d   %d %d %d \n", ptm->tm_hour, ptm->tm_min, ptm->tm_sec, ptm->tm_year, ptm->tm_mon, ptm->tm_mday);
 				//printf("LCD DateTime %s \n", DateTimeStr);    					    
 		    }
@@ -161,12 +177,13 @@ namespace SafeEngineering
 		    return DateTimeStr;
 	    }
 	    
+	    //Function to format a system date/time (tp) into a d-m-Y H:M:S string format for logging purposes  (e.g Mar 26th 2018 11:01:00AM and 45millseconds -> "[26-3-2018 11:01:00.045]")
 	    inline std::string timeString(const std::chrono::system_clock::time_point& tp)
 	    {
 		    time_t t = std::chrono::system_clock::to_time_t(tp);
 		    tm* ptm = std::localtime(&t);
 		    char szDateBuffer[128];
-		    size_t nStartLength = strftime(szDateBuffer, 128, "[%d-%m-%Y %H:%M:%S.", ptm);
+		    size_t nStartLength = strftime(szDateBuffer, 128, "[%d-%m-%Y %H:%M:%S.", ptm);  
 
 		    auto duration = tp.time_since_epoch();
 		    auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() % 1000;
@@ -176,6 +193,7 @@ namespace SafeEngineering
 		    return std::string(szDateBuffer, nStartLength + nEndLength);
 	    }
 
+	    //Function to convert a array of bytes (contained in a string) to a hexadecimal string seqeunce for logging purposes (e.g [0x01,0x02,0x03,0x04] -> "<01><02><03><04>")
 	    inline std::string string_to_hex(const std::string& input)
 	    {
 		    static const char* const lut = "0123456789ABCDEF";
@@ -194,6 +212,7 @@ namespace SafeEngineering
 		    return output;
 	    }
         
+	    //Function to convert a single byte into a to character HEX string (e.g 100 -> "0x64")
         inline std::string ConvertToHex(uint8_t byte)
         {
             char const hex[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
@@ -205,6 +224,7 @@ namespace SafeEngineering
             return str;
         }
         
+	    //Function to convert an array of bytes into a to seqeunce of character HEX strings (e.g [100,101,102,103] -> "0x64 0x65 0x66 0x67")        
         inline std::string ConvertToHex(const uint8_t* pBytes, int size)
         {
             char const hex[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
@@ -221,7 +241,8 @@ namespace SafeEngineering
             }
             return str;
         }        
-                
+        
+	    //Function to Load settings.json XML file into Local Variable settings storage.
         inline bool LoadSettings(Settings& settings)
         {
             // For testing and debugging

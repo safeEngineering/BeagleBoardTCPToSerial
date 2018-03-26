@@ -1,9 +1,9 @@
 /************************************************************
- * FileUtil.cpp
- *
+ * FileUtil.h
+ * Miscellaneous File Utilities
  * Version History:
  * Author				Date		Version  What was modified?
- * SAFE	Engineering		13 Oct 2015	1.0.0    Original
+ * SAFE	Engineering		26th Mar 2018	0.0.5    Official Release to Aurzion
  ************************************************************/
 
 #include "FileUtil.h"
@@ -17,6 +17,7 @@
 namespace aurizon
 {
 
+//Create the file system directory given by strPath if it does not exist already and apply the file permissions given in mode
 int mkpath(const std::string &strPath, unsigned int mode)
 {
     std::size_t startIndex = 0;
@@ -71,6 +72,7 @@ int mkpath(const std::string &strPath, unsigned int mode)
     return 0;
 }
 
+//Read the text file given by the strPath filepath (if it exists) and load its contents into strText parameter
 bool loadText(const std::string &strPath, std::string &strText)
 {
     std::ifstream in(strPath);
@@ -87,6 +89,7 @@ bool loadText(const std::string &strPath, std::string &strText)
     }
 }
 
+//Read the binary file given by the strPath filepath (if it exists) and load its contents into vData array parameter
 bool loadBin(const std::string &strPath, std::vector<uint8_t> &vData)
 {
     vData.clear();
@@ -112,6 +115,7 @@ bool loadBin(const std::string &strPath, std::vector<uint8_t> &vData)
     }
 }
 
+//Save the contents of the strText parameter into a text file given by the strPath filepath (overwrite if it exists) 
 bool saveText(const std::string &strPath, const std::string &strText)
 {
     std::string strTempPath = strPath + "~";
@@ -135,7 +139,8 @@ bool saveText(const std::string &strPath, const std::string &strText)
         return false;
     }
 }
-
+	
+//Save the contents of the vData array parameter into a binary file given by the strPath filepath (overwrite if it exists) 
 bool saveBin(const std::string &strPath, const std::vector<uint8_t> &vData)
 {
     std::string strTempPath = strPath + "~";

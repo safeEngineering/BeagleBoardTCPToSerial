@@ -1,9 +1,9 @@
 /************************************************************
  * TestLogService.h
- *
+ * The Main Data Dump (Test) Log Implementation
  * Version History:
  * Author				Date		Version  What was modified?
- * SAFE	Engineering		8 Nov 2016	1.0.0    Original
+ * SAFE	Engineering		26th Mar 2018	0.0.5    Official Release to Aurzion
  ************************************************************/
 
 #ifndef __TESTLOGSERVICE_H_
@@ -17,6 +17,7 @@
 #include <memory>
 #include <string>
 
+// Protocol Command Defintions (see Data Dump Log documentation supplied in Handover)
 //Packet Format ?C123456789012   N@XXXX\r
 #define DD_PACKET_CRC_LENGTH 5
 #define DD_PACKET_DATA_LENGTH 16
@@ -55,7 +56,9 @@
 #define DD_PACKET_NETWORKSTATUS_BYTE_NTPACTIVE 0x02
 #define DD_PACKET_LENGTH (DD_PACKET_DATA_LENGTH+3+DD_PACKET_CRC_LENGTH)   //STX, CMD, DATA, CRC, ETX  
 
+// Threshold of Time Mismatch between QRFL and Ethernet Time to force a re-synch.
 #define TIME_SYNC_TOLERANCE_SECS 5
+// Lock Out Polling Period after a time synch to wait until another time synch can be requested.
 #define TIME_SYNC_REPEAT_LOCKOUT  5
 
 namespace aurizon
@@ -74,7 +77,7 @@ public:
     virtual ~TestLogService();
 
     TestLogService& operator=(const TestLogService&) = delete;
-
+	//Service Control Functions
     void start();
     void stop();
 
@@ -84,12 +87,15 @@ public:
 		bool consoleDebug);
 
 private:
+	//Serial Connection Functions
     void startConnection();
     bool openConnection(asio::serial_port& serialPort);
 
+	//Serial Port Read and Handling Functions
     void startRead();
     void handleRead(const std::error_code& errorCode, std::size_t nBytesReceived, int32_t nReadID);
 
+	//Asynch Timer Functions
     void startRestartTimer();
     void handleRestartTimer(const std::error_code& errorCode);
 
@@ -98,20 +104,25 @@ private:
 
     void stopTimer();
 
+	//Data Dump Buffer Handling Functions
     void clearReadBuffer();
-
     void processBuffer();
 	
+	//Function overload for ReplaceALL string function for custom behaviour
 	std::string ReplaceAll(std::string str, const std::string& from, const std::string& to);
 	
+	//Function to simulate data dump incoming data for test purposes
 	void SimulateDatatoLog(int counter);
+	//Data Dump Log Parsing Functions
 	bool ParseDebugLogText(std::string m_strBuffer, std::string delimiterStart, std::string delimiterEnd, bool isPacketFormat);
 	bool ParseCommand(std::string str);
 	bool ParseText(std::string str);
 	std::string GetTimeAsString(std::string formatString, time_t theTime);
 
+	//Log Write Function.
     void addLog(const std::string& str);
 	
+	//Protocol Processing and Handling Functions
 	bool SendBasicCommand(uint8_t command_type, std::string& command);
 	void ReadNTPandGatewayIPAddresses();
 	void CreateNetworkSettingsJSONFile();
@@ -126,8 +137,10 @@ private:
 	std::string trim(const std::string& str);
 	bool CreateParameterSettingsJSONFile();
 
+	//Max Size of a single block of Data Dump Log Info to be received in one read.
     static const uint32_t MAX_BUFFER_SIZE = 4096;
 
+	//Serial Port Implementation Parameters and Timers.
     asio::io_service& m_ioService;
     std::shared_ptr<asio::serial_port> m_ptrSerialPort;
     Timer<std::chrono::steady_clock> m_timer;
@@ -135,44 +148,58 @@ private:
     const std::string m_strPort;
     const uint32_t m_nBaud;
 
+	//Holding Buffers for incoming data dump serial info to be parsed and looged.
     uint8_t m_aReadBuffer[MAX_BUFFER_SIZE];
     std::string m_strBuffer;
 	
+	//Last succesfully received and parsed QRFL Time
 	time_t QRFLTime = 0;
+	//Inidicator Variable that a QRFL Reset condition was recently received
 	bool  QRFLResetEventOccured = false;
 	
+	//Variable to hold temporary search position data for end of log markers across read timeouts when large amounts of log information are incoming (e.g a fault condition)
     std::size_t m_nSearchIndex = 0;
 
+	//Variable to hold the current system time to write to the log timestamp.
     std::chrono::system_clock::time_point m_logTime;;
 
+	//Unique ID for identifying Read Sequences.
     int32_t m_nReadID = 0;
-
+	
+	//Indicator variables for Data Dump Log Asych Process is running or just started.
     bool m_bIsRunning = false;
     bool m_bRestarting = false;
 	
+	//State Machine Variable to keep track of the sequence of commands to send to the QRFL
 	int16_t sequenceCounter = 0;
 	
+	//Variable to indicate if all four network settings (IP ADDR, GATEWAY, MASK, NTP) have been received prior to making any changes.
 	uint8_t validNetworkSettingsRxState = 0;
 	
+	//Current Network Variables
 	asio::ip::address_v4 IP;
 	asio::ip::address_v4 GATEWAY;
 	asio::ip::address_v4 NETMASK;
 	asio::ip::address_v4 NTPSERVER;
-			
+
+	// Variables to hold last state of Network Parameters for comparision purposes to check if a change has been made.
 	int16_t oldDetailsMatchCounter = 0;
 	std::string oldIPAddress = "";
 	std::string oldGatewayAddress = "";
 	std::string oldNetmaskAddress = "";
 	std::string oldNTPServerAddress = "";
 	
+	//QRFL to Ethernet Time Difference and Lockout variables
 	double QRFLTimeDifference = 0;
 	double QRFLTimeDifferenceBlankOutCounter = 0;
 	
+	//Indicator to send Console I/O to cout
 	bool StdOutDebug = false;
 	
 	int16_t debugCounter = 1;		//Temporary Variable to make command sequences happen for testing
 	
-	std::string alarmLogDataString = "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0";
+	//Templates for Alarm and Trip event logging strings
+	std::string alarmLogDataString = "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0";  
 	std::string tripLogDataString = "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0";
 	std::string prevAlarmLogDataString = "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0";
 	std::string prevTripLogDataString = "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0";
@@ -215,6 +242,7 @@ private:
 	std::string currentSettingsReplyString[MAX_NUM_SETTING_COMMANDS];
 	//End QRFL Settings File Generation Management 
 	
+	//Crc 16 Implementation
 	uint16_t crc16_ccitt(const char *buf, int len);
 	
 	//Ntp Client
@@ -223,6 +251,7 @@ private:
 	//Ping Client
 	SafeEngineering::Comm::PING m_PING;
 	
+	//CRC 16 LookUp Table
     const uint16_t crc16tab[256] = {
 		0x0000,
 		 0x1021,
